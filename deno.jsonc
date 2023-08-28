@@ -1,0 +1,6 @@
+{
+  "tasks": {
+    "dev": "deno run --watch --allow-read --allow-write --allow-env builder.ts",
+    "build": "deno run --allow-read --allow-write --allow-env builder.ts"
+  }
+}
