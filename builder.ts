@@ -21,5 +21,24 @@ if (fileCheck.isExist && fileCheck.isDirectory) {
   await Deno.remove("./out", { recursive: true });
 }
 await Deno.mkdir("./out");
+const proc = new Deno.Command(Deno.execPath(), {
+  args: ["fmt", "-"],
+  stdin: "piped",
+  stdout: "piped",
+  stderr: "null",
+}).spawn();
 
-await Deno.writeTextFile("./out/script.js", script);
+const raw = new ReadableStream({
+  start(controller) {
+    controller.enqueue(
+      new TextEncoder().encode(
+        script,
+      ),
+    );
+    controller.close();
+  },
+});
+await raw.pipeTo(proc.stdin);
+const { stdout } = await proc.output();
+const scriptFmt = new TextDecoder().decode(stdout);
+await Deno.writeTextFile("./out/script.js", scriptFmt);
