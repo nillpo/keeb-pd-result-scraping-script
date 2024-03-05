@@ -43,7 +43,7 @@ function isSameBeforeInit(init: string) {
 const isSameBeforeUrl = isSameBeforeInit(window.crypto.randomUUID());
 const isSameSearchBeforeUrl = isSameBeforeInit(window.crypto.randomUUID());
 
-const PATH_NAME = "/compose/tweet";
+const PATH_NAME = "/compose/post";
 let menuId = "";
 
 const isKEEBPDSearchURL = (url: URL) => {
