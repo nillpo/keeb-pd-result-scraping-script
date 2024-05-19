@@ -41,12 +41,87 @@ function isSameBeforeInit(init: string) {
 }
 
 const isSameBeforeUrl = isSameBeforeInit(window.crypto.randomUUID());
+const isSameSearchBeforeUrl = isSameBeforeInit(window.crypto.randomUUID());
 
-const PATH_NAME = "/compose/tweet";
+const PATH_NAME = "/compose/post";
 let menuId = "";
+
+const isKEEBPDSearchURL = (url: URL) => {
+  const query = url.searchParams.get("q");
+  if (
+    url.searchParams.get("f") === "live" &&
+    query &&
+    query.match(/#KEEB_PD_R\d+/g) &&
+    query.match(/min_faves:\d+/g)
+  ) {
+    return true;
+  }
+  return false;
+};
+
+const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
+  mutations
+    .reduce((p, c) => {
+      const { addedNodes } = c;
+      const nodes = Array.from(addedNodes).filter((node) => {
+        if (
+          node instanceof HTMLDivElement &&
+          node.getAttribute("data-testid") === "cellInnerDiv"
+        ) {
+          const promo = node.querySelector(
+            `article[data-testid="tweet"] > div > div > div:last-child > div > div:last-child > div > div > span`,
+          );
+          if (promo === null) return true;
+          if (promo.textContent === "プロモーション") return false;
+          return true;
+        }
+        return false;
+      }).reduce((p, c) => {
+        if (c instanceof Element) {
+          return [...p, c];
+        }
+        return p;
+      }, [] as Element[]);
+
+      return [...p, ...nodes];
+    }, [] as Element[])
+    .forEach((node) => {
+      const faves = node.querySelector(`div[data-testid="like"]`)!.textContent;
+      node
+        .querySelector(`div[data-testid$="tweet"`)!
+        .addEventListener("click", () => {
+          GM_setValue("faves", faves);
+        });
+    });
+});
 
 new MutationObserver((_mutations, _observer) => {
   const url = new URL(document.location.href);
+
+  if (url.pathname === "/search") {
+    if (!isSameSearchBeforeUrl(url.href)) {
+      console.log("same", url);
+      if (isKEEBPDSearchURL(url)) {
+        const searchTimelineElement = document.querySelector(
+          `div[aria-label="タイムライン: タイムラインを検索"]`,
+        );
+        if (searchTimelineElement !== null) {
+          searchTimelineObserver.observe(searchTimelineElement, {
+            subtree: true,
+            childList: true,
+          });
+        } else {
+          isSameSearchBeforeUrl(window.crypto.randomUUID());
+        }
+      } else {
+        isSameSearchBeforeUrl(window.crypto.randomUUID());
+      }
+    }
+  } else {
+    isSameSearchBeforeUrl(window.crypto.randomUUID());
+    searchTimelineObserver.disconnect();
+    console.info("disconnect!");
+  }
   if (!isSameBeforeUrl(url.href) && url.pathname === PATH_NAME) {
     try {
       const text = getText();
