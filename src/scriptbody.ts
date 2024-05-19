@@ -86,12 +86,20 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
       return [...p, ...nodes];
     }, [] as Element[])
     .forEach((node) => {
-      const faves = node.querySelector(`div[data-testid="like"]`)!.textContent;
-      node
-        .querySelector(`div[data-testid$="tweet"`)!
-        .addEventListener("click", () => {
+      const faves = node.querySelector(
+        `button[data-testid="like"] span[data-testid="app-text-transition-container"] > span > span`,
+      )?.textContent;
+      const retweetButton = node.querySelector(`button[data-testid="retweet"]`);
+      const tweetUrl = node.querySelector<HTMLAnchorElement>("a:has(time)");
+      if (faves && retweetButton && tweetUrl) {
+        console.info({
+          url: tweetUrl.href,
+          faves,
+        });
+        retweetButton.addEventListener("click", () => {
           GM_setValue("faves", faves);
         });
+      }
     });
 });
 
@@ -128,9 +136,10 @@ new MutationObserver((_mutations, _observer) => {
       menuId = GM_registerMenuCommand("copy to clipboard", () => {
         GM_setClipboard(text, "text");
       });
-      const appBar = document.querySelector(
-        "div[data-viewportview=true] div[data-testid=app-bar-close]",
-      )!.parentElement!.parentElement!;
+      const unsetButton = document.querySelector(
+        `button[data-testid="unsentButton"]`,
+      )!.parentElement!;
+
       const div = document.createElement("div");
       div.addEventListener("click", (target) => {
         const currentTarget = target.currentTarget;
@@ -140,7 +149,7 @@ new MutationObserver((_mutations, _observer) => {
       });
       div.style.cssText =
         `height: 1.5em; width: 1.5em; background-image: url("https://abs-0.twimg.com/emoji/v2/svg/1f436.svg"); background-size: 1.5em 1.5em; padding: 0.15em; background-position: center center; background-repeat: no-repeat; -webkit-text-fill-color: transparent;`;
-      appBar.append(div);
+      unsetButton.append(div);
     } catch (_e) {
       isSameBeforeUrl(window.crypto.randomUUID()); // retry
     }
