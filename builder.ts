@@ -30,11 +30,7 @@ const proc = new Deno.Command(Deno.execPath(), {
 
 const raw = new ReadableStream({
   start(controller) {
-    controller.enqueue(
-      new TextEncoder().encode(
-        script,
-      ),
-    );
+    controller.enqueue(new TextEncoder().encode(script));
     controller.close();
   },
 });
