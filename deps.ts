@@ -1,1 +1,1 @@
-export { bundle } from "https://deno.land/x/emit@0.38.2/mod.ts";
+export { bundle } from "jsr:@deno/emit@^0.40.3";

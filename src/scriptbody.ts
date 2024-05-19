@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-/// <reference types="https://raw.githubusercontent.com/violentmonkey/types/main/index.d.ts" />
+import "@violentmonkey/types";
 
 function getText() {
   const userElement = document.querySelectorAll(

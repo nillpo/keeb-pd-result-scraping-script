@@ -2,7 +2,7 @@ import { bundle } from "./deps.ts";
 import { metablock } from "./src/metablock.ts";
 const url = new URL("./src/scriptbody.ts", import.meta.url);
 
-const bundled = await bundle(url);
+const bundled = await bundle(url, { importMap: "./deno.jsonc" });
 const script = `${metablock}\n\n${bundled.code}`;
 
 async function isExist(
