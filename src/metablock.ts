@@ -10,5 +10,7 @@ export const metablock = `// ==UserScript==
 // @grant        GM_setClipboard
 // @grant        GM_registerMenuCommand
 // @grant        GM_unregisterMenuCommand
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
 `;
