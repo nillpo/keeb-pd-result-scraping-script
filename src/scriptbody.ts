@@ -23,7 +23,11 @@ function getText() {
   if (!userName || !tweet || !round || round.length === 0 || userName === "") {
     throw new Error("can't get text");
   }
-  return `#KEEB_PD_R${round} で一番ふぁぼが多かったのは ${userName} さんでした🎉🎉🎉🎉
+  const faves = GM_getValue("faves");
+
+  return `#KEEB_PD_R${round} で一番ふぁぼ${
+    faves ? `(❤${faves})` : ""
+  }が多かったのは ${userName} さんでした🎉🎉🎉🎉
 おめでとうございます!! 🎉🎉🎉🎉🎉🎉🎉
 #KEEB_PD_R${round} #KEEB_PD`;
 }
