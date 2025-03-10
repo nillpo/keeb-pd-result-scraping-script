@@ -56,8 +56,8 @@ function hasValueChangedFromInit(init: string) {
   };
 }
 
-const hasUrlChanged = hasValueChangedFromInit(window.crypto.randomUUID());
-const hasSearchUrlChanged = hasValueChangedFromInit(window.crypto.randomUUID());
+const hasUrlChanged = hasValueChangedFromInit(globalThis.crypto.randomUUID());
+const hasSearchUrlChanged = hasValueChangedFromInit(globalThis.crypto.randomUUID());
 
 const COMPOSE_POST_PATH = "/compose/post";
 let copyToClipboardMenuId = "";
@@ -221,12 +221,12 @@ new MutationObserver((_mutations, _observer) => {
           childList: true,
         });
       } else {
-        hasSearchUrlChanged(window.crypto.randomUUID());
+        hasSearchUrlChanged(globalThis.crypto.randomUUID());
       }
     }
   } else {
     if (isSearchTimelineObserverActive) {
-      hasSearchUrlChanged(window.crypto.randomUUID());
+      hasSearchUrlChanged(globalThis.crypto.randomUUID());
       searchTimelineObserver.disconnect();
       isSearchTimelineObserverActive = false;
       console.info("disconnect!");
@@ -258,14 +258,14 @@ new MutationObserver((_mutations, _observer) => {
         unsetButton.append(div);
       } catch (_e) {
         console.log("retry", _e);
-        hasUrlChanged(window.crypto.randomUUID()); // retry
+        hasUrlChanged(globalThis.crypto.randomUUID()); // retry
       }
     }
   } else {
     if (copyToClipboardMenuId !== "") {
       copyToClipboardMenuId = "";
       GM_unregisterMenuCommand(copyToClipboardMenuId);
-      hasUrlChanged(window.crypto.randomUUID());
+      hasUrlChanged(globalThis.crypto.randomUUID());
     }
   }
 }).observe(document, {
