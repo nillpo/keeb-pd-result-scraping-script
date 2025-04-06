@@ -60,6 +60,11 @@ type TransitionResult =
   | { success: false; from: State; event: Events; reason: string };
 
 type Listener = (result: TransitionResult) => void;
+
+export interface ExecuteHandler {
+  (event: Events, context: StateContext): void;
+}
+
 export class StateMachine {
   private currentState: State;
   private listeners: Listener[] = [];

@@ -7,6 +7,7 @@ import {
   parseEntryTweet,
   setGMTweetMeta,
 } from "./TweetParser.ts";
+import { ExecuteHandler } from "./StateMachine.ts";
 const COMPOSE_POST_PATH = "/compose/post";
 
 const isKEEBPDSearchURL = (url: URL) => {
@@ -21,6 +22,44 @@ const isKEEBPDSearchURL = (url: URL) => {
     return true;
   }
   return false;
+};
+
+const observeSearchTimeline: ExecuteHandler = (_event, context) => {
+  context.searchTimelineObserver.observe(document, {
+    subtree: true,
+    childList: true,
+  });
+};
+
+const disconnectSearchTimeline: ExecuteHandler = (_event, context) => {
+  context.searchTimelineObserver.disconnect();
+  console.info("disconnect!");
+};
+
+const setupComposePage: ExecuteHandler = (event, _context) => {
+  if (event.type !== "COMPOSE_PAGE_LOADED") return;
+  const composeButton = document.querySelector(event.css_selector)!;
+  const text = getTweetText();
+  GM_registerMenuCommand("copy to clipboard", () => {
+    GM_setClipboard(text, "text");
+  });
+  const unsetButton = composeButton.parentElement!;
+  const div = document.createElement("div");
+  div.addEventListener("click", (target) => {
+    const currentTarget = target.currentTarget;
+    if (currentTarget instanceof HTMLDivElement) {
+      GM_setClipboard(text, "text");
+    }
+  });
+
+  div.style.cssText = `height: 1.5em; width: 1.5em;
+     background-image: url("https://abs-0.twimg.com/emoji/v2/svg/1f436.svg");
+     background-size: 1.5em 1.5em;
+     padding: 0.15em;
+     background-position: center center;
+     background-repeat: no-repeat;
+     -webkit-text-fill-color: transparent;`;
+  unsetButton.append(div);
 };
 
 const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
@@ -60,7 +99,10 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
   });
 });
 
-const stateMachine = new StateMachine("IDLE", { searchTimelineObserver, listeners: [] });
+const stateMachine = new StateMachine("IDLE", {
+  searchTimelineObserver,
+  listeners: [],
+});
 
 stateMachine.addListener((result) => {
   if (result.success) {
@@ -91,12 +133,7 @@ const transitions: Transition[] = [
       if (!searchTimelineElement) return false;
       return true;
     },
-    execute: (_event, context) => {
-      context.searchTimelineObserver.observe(document, {
-        subtree: true,
-        childList: true,
-      });
-    },
+    execute: observeSearchTimeline,
   },
   {
     from: "MONITORING_SEARCH_PAGE",
@@ -110,10 +147,7 @@ const transitions: Transition[] = [
       }
       return true;
     },
-    execute: (_event, context) => {
-      context.searchTimelineObserver.disconnect();
-      console.info("disconnect!");
-    },
+    execute: disconnectSearchTimeline,
   },
   {
     from: "IDLE",
@@ -135,35 +169,7 @@ const transitions: Transition[] = [
       );
       return !!composeButton;
     },
-    execute: (event, _context) => {
-      if (event.type !== "COMPOSE_PAGE_LOADED") return;
-      const composeButton = document.querySelector(
-        event.css_selector,
-      )!;
-      const text = getTweetText();
-      GM_registerMenuCommand(
-        "copy to clipboard",
-        () => {
-          GM_setClipboard(text, "text");
-        },
-      );
-      const unsetButton = composeButton.parentElement!;
-      const div = document.createElement("div");
-      div.addEventListener("click", (target) => {
-        const currentTarget = target.currentTarget;
-        if (currentTarget instanceof HTMLDivElement) {
-          GM_setClipboard(text, "text");
-        }
-      });
-      div.style.cssText = `height: 1.5em; width: 1.5em;
-         background-image: url("https://abs-0.twimg.com/emoji/v2/svg/1f436.svg");
-         background-size: 1.5em 1.5em;
-         padding: 0.15em;
-         background-position: center center;
-         background-repeat: no-repeat;
-         -webkit-text-fill-color: transparent;`;
-      unsetButton.append(div);
-    },
+    execute: setupComposePage,
   },
   {
     from: "MONITORING_COMPOSE_PAGE",
