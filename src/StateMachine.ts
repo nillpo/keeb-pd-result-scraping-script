@@ -14,28 +14,37 @@ type StateSchema =
   | LoadingComposePageSchema
   | MonitoringComposePageSchema;
 type State = StateSchema["state"];
-type EventType =
+type StateEventType =
   | "PAGE_CHANGED"
   | "DETECT_SEARCH_URL"
   | "DETECT_COMPOSE_URL"
   | "SEARCH_PAGE_LOADED"
   | "COMPOSE_PAGE_LOADED";
-type Event<E extends EventType, T = Record<string | number | symbol, never>> = {
+type StateEventPayload<
+  E extends StateEventType,
+  T = Record<PropertyKey, never>,
+> = {
   type: E;
 } & T;
-type DetectSearchUrlEvent = Event<"DETECT_SEARCH_URL", { url: string }>;
-type DetectComposeUrlEvent = Event<"DETECT_COMPOSE_URL", { url: string }>;
-type SearchPageLoadedEvent = Event<
+type DetectSearchUrlEvent = StateEventPayload<
+  "DETECT_SEARCH_URL",
+  { url: string }
+>;
+type DetectComposeUrlEvent = StateEventPayload<
+  "DETECT_COMPOSE_URL",
+  { url: string }
+>;
+type SearchPageLoadedEvent = StateEventPayload<
   "SEARCH_PAGE_LOADED",
   { css_selector: string }
 >;
-type ComposePageLoadedEvent = Event<
+type ComposePageLoadedEvent = StateEventPayload<
   "COMPOSE_PAGE_LOADED",
   { css_selector: string }
 >;
-type PageChangedEvent = Event<"PAGE_CHANGED", { url: string }>;
+type PageChangedEvent = StateEventPayload<"PAGE_CHANGED", { url: string }>;
 
-type Events =
+type StateEvents =
   | DetectComposeUrlEvent
   | DetectSearchUrlEvent
   | SearchPageLoadedEvent
@@ -50,19 +59,19 @@ type StateContext = {
 export type Transition = {
   from: State;
   to: State;
-  event?: EventType;
-  condition?: (event: Events) => boolean;
-  execute?: (event: Events, context: StateContext) => void;
+  event?: StateEventType;
+  condition?: (event: StateEvents) => boolean;
+  execute?: (event: StateEvents, context: StateContext) => void;
 };
 
 type TransitionResult =
-  | { success: true; from: State; to: State; event: Events }
-  | { success: false; from: State; event: Events; reason: string };
+  | { success: true; from: State; to: State; event: StateEvents }
+  | { success: false; from: State; event: StateEvents; reason: string };
 
 type Listener = (result: TransitionResult) => void;
 
 export interface ExecuteHandler {
-  (event: Events, context: StateContext): void;
+  (event: StateEvents, context: StateContext): void;
 }
 
 export class StateMachine {
@@ -117,7 +126,7 @@ export class StateMachine {
     }
   }
 
-  public canTransition(event: Events): boolean {
+  public canTransition(event: StateEvents): boolean {
     const matchedTransition = this.transitions.find(
       (t) => t.from === this.currentState && t.event === event.type,
     );
@@ -133,7 +142,7 @@ export class StateMachine {
     return true;
   }
 
-  public dispatch(event: Events): boolean {
+  public dispatch(event: StateEvents): boolean {
     const prevState = this.currentState;
 
     const matchedTransition = this.transitions.find(
@@ -179,7 +188,7 @@ export class StateMachine {
     return true;
   }
 
-  public tryDispatch(event: Events): boolean {
+  public tryDispatch(event: StateEvents): boolean {
     if (this.canTransition(event)) {
       this.dispatch(event);
       return true;
@@ -191,7 +200,7 @@ export class StateMachine {
     return this.currentState === state;
   }
 
-  public canHandle(eventType: EventType): boolean {
+  public canHandle(eventType: StateEventType): boolean {
     return this.transitions.some((t) =>
       t.from === this.currentState && t.event === eventType
     );
