@@ -1,8 +1,8 @@
 export const metablock = `// ==UserScript==
-// @name         KEEB_PD Result
+// @name         KEEB_PD Result Scraper
 // @namespace    nillpo
 // @version      0.1
-// @description  KEEB_PD result
+// @description  Scrapes and processes KEEB_PD results from Twitter
 // @author       nillpo
 // @match        https://twitter.com/*
 // @match        https://x.com/*
