@@ -63,37 +63,35 @@ const setupComposePage: ExecuteHandler = (event, _context) => {
 };
 
 const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
-  const a = mutations
-    .reduce((p, c) => {
-      const { addedNodes } = c;
-      const nodes = Array.from(addedNodes).filter((node) => {
-        if (
-          isPromotionTweet(node) ||
-          isQuoteRetweet(node)
-        ) {
+  const validNodes = mutations
+    .reduce((accumulatedNodes, mutation) => {
+      const { addedNodes } = mutation;
+      const filteredNodes = Array.from(addedNodes).filter((node) => {
+        if (isPromotionTweet(node) || isQuoteRetweet(node)) {
           return false;
         }
         if (!(node instanceof Element)) return false;
         if (node.getAttribute("data-testid") !== "cellInnerDiv") return false;
         return true;
-      }).reduce((p, c) => {
-        if (c instanceof Element) {
-          return [...p, c];
+      }).reduce((elements, node) => {
+        if (node instanceof Element) {
+          return [...elements, node];
         }
-        return p;
+        return elements;
       }, [] as Element[]);
 
-      return [...p, ...nodes];
+      return [...accumulatedNodes, ...filteredNodes];
     }, [] as Element[]);
-  console.log("list", a);
-  a.forEach((node) => {
+
+  console.log("Filtered nodes:", validNodes);
+  validNodes.forEach((node) => {
     const retweetButton = node.querySelector(`button[data-testid="retweet"]`) ??
       node.querySelector(`button[data-testid="unretweet"]`);
-    const result = parseEntryTweet(node);
-    if (retweetButton && result.isEntryTweet) {
-      console.info(result.tweet);
+    const tweetData = parseEntryTweet(node);
+    if (retweetButton && tweetData.isEntryTweet) {
+      console.info(tweetData.tweet);
       retweetButton.addEventListener("click", () => {
-        setGMTweetMeta(result.tweet);
+        setGMTweetMeta(tweetData.tweet);
       });
     }
   });
