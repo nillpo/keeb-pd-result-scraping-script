@@ -11,6 +11,7 @@ import { ExecuteHandler } from "./StateMachine.ts";
 
 type StateContext = {
   searchTimelineObserver: MutationObserver;
+  twitterPageObserver: MutationObserver;
   listeners: number[];
 };
 
@@ -28,6 +29,13 @@ const isKEEBPDSearchURL = (url: URL) => {
     return true;
   }
   return false;
+};
+
+const observeTwitterPage: ExecuteHandler<StateContext> = (_event, context) => {
+  context.twitterPageObserver.observe(document, {
+    subtree: true,
+    childList: true,
+  });
 };
 
 const observeSearchTimeline: ExecuteHandler<StateContext> = (
@@ -74,6 +82,44 @@ const setupComposePage: ExecuteHandler<StateContext> = (event, _context) => {
   unsetButton.append(div);
 };
 
+const twitterPageObserver = new MutationObserver(() => {
+  stateMachine.tryDispatch({
+    type: "DETECT_SEARCH_URL",
+    url: document.location.href,
+  });
+  stateMachine.tryDispatch({
+    type: "SEARCH_PAGE_LOADED",
+    css_selector: `div[aria-label="タイムライン: タイムラインを検索"]`,
+  });
+  stateMachine.tryDispatch({
+    type: "DETECT_COMPOSE_URL",
+    url: document.location.pathname,
+  });
+  stateMachine.tryDispatch({
+    type: "COMPOSE_PAGE_LOADED",
+    css_selector: `button[data-testid="unsentButton"]`,
+  });
+
+  if (stateMachine.canHandle("PAGE_CHANGED")) {
+    switch (stateMachine.getState()) {
+      case "MONITORING_SEARCH_PAGE": {
+        stateMachine.tryDispatch({
+          type: "PAGE_CHANGED",
+          url: document.location.href,
+        });
+        break;
+      }
+      case "MONITORING_COMPOSE_PAGE": {
+        stateMachine.tryDispatch({
+          type: "PAGE_CHANGED",
+          url: document.location.pathname,
+        });
+        break;
+      }
+    }
+  }
+});
+
 const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
   const validNodes = mutations
     .reduce((accumulatedNodes, mutation) => {
@@ -96,12 +142,16 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
     }, [] as Element[]);
 
   console.log("Filtered nodes:", validNodes);
+
   validNodes.forEach((node) => {
     const retweetButton = node.querySelector(`button[data-testid="retweet"]`) ??
       node.querySelector(`button[data-testid="unretweet"]`);
     const tweetData = parseEntryTweet(node);
+    console.log(
+      "TWEET PARSE",
+      tweetData.isEntryTweet ? JSON.stringify(tweetData.tweet) : "invalid",
+    );
     if (retweetButton && tweetData.isEntryTweet) {
-      console.info(tweetData.tweet);
       retweetButton.addEventListener("click", () => {
         setGMTweetMeta(tweetData.tweet);
       });
@@ -109,8 +159,9 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
   });
 });
 
-const stateMachine = new StateMachine<StateContext>("IDLE", {
+const stateMachine = new StateMachine<StateContext>("INITIAL", {
   searchTimelineObserver,
+  twitterPageObserver,
   listeners: [],
 });
 
@@ -125,7 +176,13 @@ stateMachine.addListener((result) => {
 });
 const transitions: Transition<StateContext>[] = [
   {
-    from: "IDLE",
+    from: "INITIAL",
+    to: "OBSERVING_TWITTER_PAGE",
+    event: "BEGIN_OBSERVING",
+    execute: observeTwitterPage,
+  },
+  {
+    from: "OBSERVING_TWITTER_PAGE",
     event: "DETECT_SEARCH_URL",
     to: "LOADING_SEARCH_PAGE",
     condition: (event) => {
@@ -148,7 +205,7 @@ const transitions: Transition<StateContext>[] = [
   {
     from: "MONITORING_SEARCH_PAGE",
     event: "PAGE_CHANGED",
-    to: "IDLE",
+    to: "OBSERVING_TWITTER_PAGE",
     condition: (event) => {
       if (event.type !== "PAGE_CHANGED") return false;
       const url = new URL(event.url);
@@ -160,7 +217,7 @@ const transitions: Transition<StateContext>[] = [
     execute: disconnectSearchTimeline,
   },
   {
-    from: "IDLE",
+    from: "OBSERVING_TWITTER_PAGE",
     event: "DETECT_COMPOSE_URL",
     to: "LOADING_COMPOSE_PAGE",
     condition: (event) => {
@@ -184,7 +241,7 @@ const transitions: Transition<StateContext>[] = [
   {
     from: "MONITORING_COMPOSE_PAGE",
     event: "PAGE_CHANGED",
-    to: "IDLE",
+    to: "OBSERVING_TWITTER_PAGE",
     condition: (event) => {
       if (event.type !== "PAGE_CHANGED") return false;
       return event.url !== COMPOSE_POST_PATH;
@@ -193,45 +250,4 @@ const transitions: Transition<StateContext>[] = [
 ];
 
 stateMachine.addTransitions(transitions);
-
-function setupURLMonitor() {
-  new MutationObserver(() => {
-    stateMachine.tryDispatch({
-      type: "DETECT_SEARCH_URL",
-      url: document.location.href,
-    });
-    stateMachine.tryDispatch({
-      type: "SEARCH_PAGE_LOADED",
-      css_selector: `div[aria-label="タイムライン: タイムラインを検索"]`,
-    });
-    stateMachine.tryDispatch({
-      type: "DETECT_COMPOSE_URL",
-      url: document.location.pathname,
-    });
-    stateMachine.tryDispatch({
-      type: "COMPOSE_PAGE_LOADED",
-      css_selector: `button[data-testid="unsentButton"]`,
-    });
-
-    if (stateMachine.canHandle("PAGE_CHANGED")) {
-      switch (stateMachine.getState()) {
-        case "MONITORING_SEARCH_PAGE": {
-          stateMachine.tryDispatch({
-            type: "PAGE_CHANGED",
-            url: document.location.href,
-          });
-          break;
-        }
-        case "MONITORING_COMPOSE_PAGE": {
-          stateMachine.tryDispatch({
-            type: "PAGE_CHANGED",
-            url: document.location.pathname,
-          });
-          break;
-        }
-      }
-    }
-  }).observe(document, { subtree: true, childList: true });
-}
-
-setupURLMonitor();
+stateMachine.dispatch({ type: "BEGIN_OBSERVING" });

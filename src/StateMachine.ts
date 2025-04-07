@@ -1,5 +1,7 @@
 type StateTemplate<S> = { state: S };
-type IdleStateSchema = StateTemplate<"IDLE">;
+
+type InitlaStateSchema = StateTemplate<"INITIAL">;
+type ObservingTwitterPageSchema = StateTemplate<"OBSERVING_TWITTER_PAGE">;
 
 type LoadingSearchPageSchema = StateTemplate<"LOADING_SEARCH_PAGE">;
 type MonitoringSearchPageSchema = StateTemplate<"MONITORING_SEARCH_PAGE">;
@@ -8,24 +10,32 @@ type LoadingComposePageSchema = StateTemplate<"LOADING_COMPOSE_PAGE">;
 type MonitoringComposePageSchema = StateTemplate<"MONITORING_COMPOSE_PAGE">;
 
 type StateSchema =
-  | IdleStateSchema
+  | InitlaStateSchema
+  | ObservingTwitterPageSchema
   | LoadingSearchPageSchema
   | MonitoringSearchPageSchema
   | LoadingComposePageSchema
   | MonitoringComposePageSchema;
 type State = StateSchema["state"];
 type StateEventType =
+  | "INITIAL"
   | "PAGE_CHANGED"
   | "DETECT_SEARCH_URL"
   | "DETECT_COMPOSE_URL"
   | "SEARCH_PAGE_LOADED"
-  | "COMPOSE_PAGE_LOADED";
+  | "COMPOSE_PAGE_LOADED"
+  | "BEGIN_OBSERVING";
+
 type StateEventPayload<
   E extends StateEventType,
   T = Record<PropertyKey, unknown>,
 > = {
   type: E;
 } & T;
+
+type BeginObservingEvent = StateEventPayload<
+  "BEGIN_OBSERVING"
+>;
 type DetectSearchUrlEvent = StateEventPayload<
   "DETECT_SEARCH_URL",
   { url: string }
@@ -49,7 +59,8 @@ type StateEvents =
   | DetectSearchUrlEvent
   | SearchPageLoadedEvent
   | ComposePageLoadedEvent
-  | PageChangedEvent;
+  | PageChangedEvent
+  | BeginObservingEvent;
 
 export type Transition<T> = {
   from: State;
@@ -75,7 +86,7 @@ export class StateMachine<StateContext extends Record<string, unknown>> {
   private transitions: Transition<StateContext>[] = [];
   private context: StateContext;
 
-  constructor(initialState: State = "IDLE", context: StateContext) {
+  constructor(initialState: State = "INITIAL", context: StateContext) {
     this.currentState = initialState;
     this.context = context;
   }
