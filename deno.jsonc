@@ -4,6 +4,8 @@
     "build": "deno run --allow-read --allow-write --allow-env --allow-net --allow-run builder.ts"
   },
   "imports": {
-    "@violentmonkey/types": "https://esm.sh/v135/@violentmonkey/types@0.1.7/index.d.ts"
+    "@luca/esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@^0.11.1",
+    "@violentmonkey/types": "npm:@violentmonkey/types@^0.2.1",
+    "esbuild-wasm": "npm:esbuild-wasm@^0.25.2"
   }
 }

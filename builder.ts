@@ -1,10 +1,23 @@
-import { bundle } from "./deps.ts";
+import * as esbuild from "esbuild-wasm";
+import { denoPlugins } from "@luca/esbuild-deno-loader";
 import { metablock } from "./src/metablock.ts";
+
 const url = new URL("./src/scriptbody.ts", import.meta.url);
 
-const bundled = await bundle(url, { importMap: "./deno.jsonc" });
-const script = `${metablock}\n\n${bundled.code}`;
+await esbuild.initialize({});
+const result = await esbuild.build({
+  bundle: true,
+  outdir: "./out",
+  entryPoints: [url.toString()],
+  write: false,
+  plugins: [...denoPlugins()],
+  target: "esnext",
+  platform: "browser",
+  format: "esm",
+});
 
+const script = `${metablock}\n\n${result.outputFiles[0].text}`;
+esbuild.stop();
 async function isExist(
   path: string,
 ): Promise<{ isExist: false } | { isExist: true; isDirectory: boolean }> {
