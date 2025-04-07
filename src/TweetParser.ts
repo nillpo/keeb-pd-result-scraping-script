@@ -1,46 +1,24 @@
 import "@violentmonkey/types";
 
-type Tweet = {
+export type Tweet = {
   date: string;
   fav: number;
   retweet: number;
   url: string;
   userName: string;
+  round: string;
 };
 type EntryTweetResult = {
   isEntryTweet: true;
   tweet: Tweet;
 } | { isEntryTweet: false };
 
-export function getTweetText() {
-  const userElement = document.querySelectorAll(
-    "div[data-testid=attachments] div[data-testid=User-Name] div > div[dir=ltr]:first-child > span",
-  )[0];
-  if (!userElement || userElement.childNodes.length === 0) {
-    throw new Error("can't parse username");
-  }
-  const userName = Array.from(userElement.childNodes, (node) => {
-    if (node instanceof HTMLSpanElement) return node.textContent;
-    if (node instanceof HTMLImageElement) return node.alt; // emoji
-  }).join("");
-
-  const tweet = document.querySelector(
-    `div[data-testid=attachments] div[data-testid="tweetText"]`,
-  );
-
-  if (!tweet || tweet.textContent === null) throw new Error("can't get tweet");
-  const round = tweet.textContent.match(/(?<=KEEB_PD_R)\d+/);
-
-  if (!userName || !tweet || !round || round.length === 0 || userName === "") {
-    throw new Error("can't get text");
-  }
-  const tweetMeta = getGMTweetMeta();
-
-  return `#KEEB_PD_R${round} で一番ふぁぼ${
-    tweetMeta.fav ? `(❤${tweetMeta.fav})` : ""
-  }が多かったのは ${userName} さんでした🎉🎉🎉🎉
+export function getTweetText(tweet: Tweet) {
+  return `#KEEB_PD_R${tweet.round} で一番ふぁぼ${
+    tweet.fav ? `(❤${tweet.fav})` : ""
+  }が多かったのは ${tweet.userName} さんでした🎉🎉🎉🎉
 おめでとうございます!! 🎉🎉🎉🎉🎉🎉🎉
-#KEEB_PD_R${round} #KEEB_PD`;
+#KEEB_PD_R${tweet.round} #KEEB_PD`;
 }
 
 export function isPromotionTweet(node: Node) {
@@ -87,6 +65,7 @@ export function parseEntryTweet(
         retweet: 0,
         url: "",
         userName: "",
+        round: "",
       },
     };
     const favElm = node.querySelector(
@@ -109,9 +88,20 @@ export function parseEntryTweet(
       `article div[data-testid="User-Name"]`,
     );
 
-    result.tweet.userName = userMetaElement?.querySelector(
+    const userNameElements = userMetaElement?.querySelector(
       `div:first-child>div>a[role="link"] > div:first-child > div:first-child > span`,
-    )?.textContent ?? "invalid user name";
+    )?.childNodes;
+
+    if (userNameElements) {
+      const userName = Array.from(userNameElements, (node) => {
+        if (node instanceof HTMLSpanElement) return node.textContent;
+        if (node instanceof HTMLImageElement) return node.alt; // emoji
+      }).join("");
+      result.tweet.userName = userName.trim();
+    } else {
+      result.tweet.userName = "??????";
+    }
+
     const tweetDetailElement = userMetaElement?.querySelector(
       `div:nth-child(2) > div > div:nth-child(3) > a[role="link"]`,
     );
@@ -119,16 +109,13 @@ export function parseEntryTweet(
       ?.getAttribute("datetime") ?? "invalid date";
     result.tweet.url = tweetDetailElement?.getAttribute("href") ??
       "invalid url";
+
+    const tweet = node.querySelector(
+      `div[data-testid="tweetText"]`,
+    );
+    const round = tweet?.textContent?.match(/(?<=KEEB_PD_R)\d+/);
+    result.tweet.round = round ? round[0] : "UNKNOWN";
     return result;
   }
   return { isEntryTweet: false };
-}
-
-export function setGMTweetMeta(tweet: Tweet) {
-  GM_setValue("tweet", tweet);
-  console.log(tweet);
-}
-
-function getGMTweetMeta() {
-  return GM_getValue("tweet") as Tweet;
 }

@@ -5,7 +5,7 @@ import {
   isPromotionTweet,
   isQuoteRetweet,
   parseEntryTweet,
-  setGMTweetMeta,
+  Tweet,
 } from "./TweetParser.ts";
 import { ExecuteHandler } from "./StateMachine.ts";
 
@@ -13,6 +13,7 @@ type StateContext = {
   searchTimelineObserver: MutationObserver;
   twitterPageObserver: MutationObserver;
   listeners: number[];
+  tweet: Tweet;
 };
 
 const COMPOSE_POST_PATH = "/compose/post";
@@ -56,10 +57,10 @@ const disconnectSearchTimeline: ExecuteHandler<StateContext> = (
   console.info("disconnect!");
 };
 
-const setupComposePage: ExecuteHandler<StateContext> = (event, _context) => {
+const setupComposePage: ExecuteHandler<StateContext> = (event, context) => {
   if (event.type !== "COMPOSE_PAGE_LOADED") return;
   const composeButton = document.querySelector(event.css_selector)!;
-  const text = getTweetText();
+  const text = getTweetText(context.tweet);
   GM_registerMenuCommand("copy to clipboard", () => {
     GM_setClipboard(text, "text");
   });
@@ -153,7 +154,10 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
     );
     if (retweetButton && tweetData.isEntryTweet) {
       retweetButton.addEventListener("click", () => {
-        setGMTweetMeta(tweetData.tweet);
+        stateMachine.dispatch({
+          type: "UPDATE_TWEET_CONTEXT",
+          tweet: { ...tweetData.tweet },
+        });
       });
     }
   });
@@ -163,6 +167,14 @@ const stateMachine = new StateMachine<StateContext>("INITIAL", {
   searchTimelineObserver,
   twitterPageObserver,
   listeners: [],
+  tweet: {
+    date: "",
+    fav: 0,
+    retweet: 0,
+    round: "",
+    url: "",
+    userName: "",
+  },
 });
 
 stateMachine.addListener((result) => {
@@ -201,6 +213,15 @@ const transitions: Transition<StateContext>[] = [
       return true;
     },
     execute: observeSearchTimeline,
+  },
+  {
+    from: "MONITORING_SEARCH_PAGE",
+    event: "UPDATE_TWEET_CONTEXT",
+    to: "MONITORING_SEARCH_PAGE",
+    execute: (event, context) => {
+      if (event.type !== "UPDATE_TWEET_CONTEXT") return;
+      context.tweet = { ...event.tweet };
+    },
   },
   {
     from: "MONITORING_SEARCH_PAGE",

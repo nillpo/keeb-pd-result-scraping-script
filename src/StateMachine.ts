@@ -1,3 +1,4 @@
+import { Tweet } from "./TweetParser.ts";
 type StateTemplate<S> = { state: S };
 
 type InitlaStateSchema = StateTemplate<"INITIAL">;
@@ -24,7 +25,8 @@ type StateEventType =
   | "DETECT_COMPOSE_URL"
   | "SEARCH_PAGE_LOADED"
   | "COMPOSE_PAGE_LOADED"
-  | "BEGIN_OBSERVING";
+  | "BEGIN_OBSERVING"
+  | "UPDATE_TWEET_CONTEXT";
 
 type StateEventPayload<
   E extends StateEventType,
@@ -53,6 +55,10 @@ type ComposePageLoadedEvent = StateEventPayload<
   { css_selector: string }
 >;
 type PageChangedEvent = StateEventPayload<"PAGE_CHANGED", { url: string }>;
+type UpdateTweetContextEvent = StateEventPayload<
+  "UPDATE_TWEET_CONTEXT",
+  { tweet: Tweet }
+>;
 
 type StateEvents =
   | DetectComposeUrlEvent
@@ -60,7 +66,8 @@ type StateEvents =
   | SearchPageLoadedEvent
   | ComposePageLoadedEvent
   | PageChangedEvent
-  | BeginObservingEvent;
+  | BeginObservingEvent
+  | UpdateTweetContextEvent;
 
 export type Transition<T> = {
   from: State;
