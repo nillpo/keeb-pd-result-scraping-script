@@ -8,6 +8,12 @@ import {
   setGMTweetMeta,
 } from "./TweetParser.ts";
 import { ExecuteHandler } from "./StateMachine.ts";
+
+type StateContext = {
+  searchTimelineObserver: MutationObserver;
+  listeners: number[];
+};
+
 const COMPOSE_POST_PATH = "/compose/post";
 
 const isKEEBPDSearchURL = (url: URL) => {
@@ -24,19 +30,25 @@ const isKEEBPDSearchURL = (url: URL) => {
   return false;
 };
 
-const observeSearchTimeline: ExecuteHandler = (_event, context) => {
+const observeSearchTimeline: ExecuteHandler<StateContext> = (
+  _event,
+  context,
+) => {
   context.searchTimelineObserver.observe(document, {
     subtree: true,
     childList: true,
   });
 };
 
-const disconnectSearchTimeline: ExecuteHandler = (_event, context) => {
+const disconnectSearchTimeline: ExecuteHandler<StateContext> = (
+  _event,
+  context,
+) => {
   context.searchTimelineObserver.disconnect();
   console.info("disconnect!");
 };
 
-const setupComposePage: ExecuteHandler = (event, _context) => {
+const setupComposePage: ExecuteHandler<StateContext> = (event, _context) => {
   if (event.type !== "COMPOSE_PAGE_LOADED") return;
   const composeButton = document.querySelector(event.css_selector)!;
   const text = getTweetText();
@@ -97,7 +109,7 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
   });
 });
 
-const stateMachine = new StateMachine("IDLE", {
+const stateMachine = new StateMachine<StateContext>("IDLE", {
   searchTimelineObserver,
   listeners: [],
 });
@@ -111,7 +123,7 @@ stateMachine.addListener((result) => {
     );
   }
 });
-const transitions: Transition[] = [
+const transitions: Transition<StateContext>[] = [
   {
     from: "IDLE",
     event: "DETECT_SEARCH_URL",

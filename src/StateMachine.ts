@@ -22,7 +22,7 @@ type StateEventType =
   | "COMPOSE_PAGE_LOADED";
 type StateEventPayload<
   E extends StateEventType,
-  T = Record<PropertyKey, never>,
+  T = Record<PropertyKey, unknown>,
 > = {
   type: E;
 } & T;
@@ -51,17 +51,12 @@ type StateEvents =
   | ComposePageLoadedEvent
   | PageChangedEvent;
 
-type StateContext = {
-  searchTimelineObserver: MutationObserver;
-  listeners: number[];
-};
-
-export type Transition = {
+export type Transition<T> = {
   from: State;
   to: State;
   event?: StateEventType;
   condition?: (event: StateEvents) => boolean;
-  execute?: (event: StateEvents, context: StateContext) => void;
+  execute?: (event: StateEvents, context: T) => void;
 };
 
 type TransitionResult =
@@ -70,14 +65,14 @@ type TransitionResult =
 
 type Listener = (result: TransitionResult) => void;
 
-export interface ExecuteHandler {
-  (event: StateEvents, context: StateContext): void;
+export interface ExecuteHandler<T> {
+  (event: StateEvents, context: T): void;
 }
 
-export class StateMachine {
+export class StateMachine<StateContext extends Record<string, unknown>> {
   private currentState: State;
   private listeners: Listener[] = [];
-  private transitions: Transition[] = [];
+  private transitions: Transition<StateContext>[] = [];
   private context: StateContext;
 
   constructor(initialState: State = "IDLE", context: StateContext) {
@@ -85,12 +80,12 @@ export class StateMachine {
     this.context = context;
   }
 
-  public addTransition(transition: Transition): this {
+  public addTransition(transition: Transition<StateContext>): this {
     this.transitions.push(transition);
     return this;
   }
 
-  public addTransitions(transitions: Transition[]): this {
+  public addTransitions(transitions: Transition<StateContext>[]): this {
     this.transitions.push(...transitions);
     return this;
   }
