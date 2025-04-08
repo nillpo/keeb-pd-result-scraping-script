@@ -238,7 +238,7 @@ const transitions: Transition<StateContext>[] = [
     execute: disconnectSearchTimeline,
   },
   {
-    from: "OBSERVING_TWITTER_PAGE",
+    from: "MONITORING_SEARCH_PAGE",
     event: "DETECT_COMPOSE_URL",
     to: "LOADING_COMPOSE_PAGE",
     condition: (event) => {
