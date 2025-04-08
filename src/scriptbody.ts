@@ -61,15 +61,14 @@ const setupComposePage: ExecuteHandler<StateContext> = (event, context) => {
   if (event.type !== "COMPOSE_PAGE_LOADED") return;
   const composeButton = document.querySelector(event.css_selector)!;
   const text = getTweetText(context.tweet);
-  GM_registerMenuCommand("copy to clipboard", () => {
-    GM_setClipboard(text, "text");
-  });
   const unsetButton = composeButton.parentElement!;
   const div = document.createElement("div");
   div.addEventListener("click", (target) => {
     const currentTarget = target.currentTarget;
     if (currentTarget instanceof HTMLDivElement) {
-      GM_setClipboard(text, "text");
+      navigator.clipboard.writeText(text).then(() =>
+        console.log("Text copied!")
+      ).catch((err) => console.error("Clipboard write failed", err));
     }
   });
 
