@@ -1,13 +1,12 @@
 /// <reference lib="dom" />
-import { StateMachine, Transition } from "./StateMachine.ts";
+import { ExecuteHandler, StateMachine, Transition } from "./state-machine.ts";
 import {
   getTweetText,
   isPromotionTweet,
   isQuoteRetweet,
   parseEntryTweet,
   Tweet,
-} from "./TweetParser.ts";
-import { ExecuteHandler } from "./StateMachine.ts";
+} from "./tweet-parser.ts";
 
 type StateContext = {
   searchTimelineObserver: MutationObserver;

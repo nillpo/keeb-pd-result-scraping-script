@@ -1,4 +1,4 @@
-import { Tweet } from "./TweetParser.ts";
+import { Tweet } from "./tweet-parser.ts";
 type StateTemplate<S> = { state: S };
 
 type InitlaStateSchema = StateTemplate<"INITIAL">;
