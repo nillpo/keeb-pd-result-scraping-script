@@ -1,9 +1,8 @@
-import * as esbuild from "esbuild-wasm";
+import * as esbuild from "esbuild";
 import { denoPlugins } from "@luca/esbuild-deno-loader";
 import { metablock } from "./src/metablock.ts";
 
 const url = new URL("./src/scriptbody.ts", import.meta.url);
-
 await esbuild.initialize({});
 const result = await esbuild.build({
   bundle: true,

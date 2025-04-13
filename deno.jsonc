@@ -6,6 +6,6 @@
   "imports": {
     "@luca/esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@^0.11.1",
     "@violentmonkey/types": "npm:@violentmonkey/types@^0.2.1",
-    "esbuild-wasm": "npm:esbuild-wasm@^0.25.2"
+    "esbuild": "npm:esbuild@^0.25.2"
   }
 }
