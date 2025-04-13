@@ -9,7 +9,7 @@ export type Tweet = {
 type EntryTweetResult = {
   isEntryTweet: true;
   tweet: Tweet;
-} | { isEntryTweet: false };
+} | { isEntryTweet: false; reason: string };
 
 export function getTweetText(tweet: Tweet) {
   return `#KEEB_PD_R${tweet.round} で一番ふぁぼ${
@@ -49,71 +49,89 @@ export function isQuoteRetweet(node: Node) {
 export function parseEntryTweet(
   node: Node,
 ): EntryTweetResult {
-  if (
-    node instanceof HTMLDivElement &&
-    node.getAttribute("data-testid") === "cellInnerDiv" &&
-    !isPromotionTweet(node) &&
-    !isQuoteRetweet(node)
-  ) {
-    const result = {
-      isEntryTweet: true,
-      tweet: {
-        date: "",
-        fav: 0,
-        retweet: 0,
-        url: "",
-        userName: "",
-        round: "",
-      },
-    };
-    const favElm = node.querySelector(
-      `button[data-testid="like"] span[data-testid="app-text-transition-container"]`,
-    )?.textContent;
-    const retweetElement = node.querySelector(
-      `button[data-testid="retweet"] span[data-testid="app-text-transition-container"]`,
-    )?.textContent;
-    const unretweetElement = node.querySelector(
-      `button[data-testid="unretweet"] span[data-testid="app-text-transition-container"]`,
-    )?.textContent;
-    result.tweet.fav = Number(favElm ? favElm : 0);
-    result.tweet.retweet = retweetElement
-      ? Number(retweetElement)
-      : unretweetElement
-      ? Number(unretweetElement)
-      : 0;
-
-    const userMetaElement = node.querySelector(
-      `article div[data-testid="User-Name"]`,
-    );
-
-    const userNameElements = userMetaElement?.querySelector(
-      `div:first-child>div>a[role="link"] > div:first-child > div:first-child > span`,
-    )?.childNodes;
-
-    if (userNameElements) {
-      const userName = Array.from(userNameElements, (node) => {
-        if (node instanceof HTMLSpanElement) return node.textContent;
-        if (node instanceof HTMLImageElement) return node.alt; // emoji
-      }).join("");
-      result.tweet.userName = userName.trim();
-    } else {
-      result.tweet.userName = "??????";
-    }
-
-    const tweetDetailElement = userMetaElement?.querySelector(
-      `div:nth-child(2) > div > div:nth-child(3) > a[role="link"]`,
-    );
-    result.tweet.date = tweetDetailElement?.getElementsByTagName("time")[0]
-      ?.getAttribute("datetime") ?? "invalid date";
-    result.tweet.url = tweetDetailElement?.getAttribute("href") ??
-      "invalid url";
-
-    const tweet = node.querySelector(
-      `div[data-testid="tweetText"]`,
-    );
-    const round = tweet?.textContent?.match(/(?<=KEEB_PD_R)\d+/);
-    result.tweet.round = round ? round[0] : "UNKNOWN";
-    return result;
+  if (!(node instanceof HTMLDivElement)) {
+    return { isEntryTweet: false, reason: "node is not HTMLDivElement" };
   }
-  return { isEntryTweet: false };
+  if (node.getAttribute("data-testid") !== "cellInnerDiv") {
+    return { isEntryTweet: false, reason: "node is not cellInnerDiv" };
+  }
+  if (isPromotionTweet(node)) {
+    return { isEntryTweet: false, reason: "node is promotion tweet" };
+  }
+  if (isQuoteRetweet(node)) {
+    return { isEntryTweet: false, reason: "node is quote retweet" };
+  }
+  const tweetMeta = {
+    date: "",
+    fav: 0,
+    retweet: 0,
+    url: "",
+    userName: "",
+    round: "",
+  };
+  const favElm = node.querySelector(
+    `button[data-testid="like"] span[data-testid="app-text-transition-container"]`,
+  )?.textContent;
+  if (!favElm) {
+    return { isEntryTweet: false, reason: "like element not found" };
+  }
+  const retweetElement = node.querySelector(
+    `button[data-testid="retweet"] span[data-testid="app-text-transition-container"]`,
+  )?.textContent;
+  const unretweetElement = node.querySelector(
+    `button[data-testid="unretweet"] span[data-testid="app-text-transition-container"]`,
+  )?.textContent;
+  if (!retweetElement && !unretweetElement) {
+    return { isEntryTweet: false, reason: "retweet element not found" };
+  }
+  tweetMeta.fav = Number(favElm);
+  tweetMeta.retweet = retweetElement
+    ? Number(retweetElement)
+    : Number(unretweetElement);
+
+  const userMetaElement = node.querySelector(
+    `article div[data-testid="User-Name"]`,
+  );
+  if (!userMetaElement) {
+    return { isEntryTweet: false, reason: "user meta element not found" };
+  }
+
+  const userNameElements = userMetaElement.querySelector(
+    `div:first-child>div>a[role="link"] > div:first-child > div:first-child > span`,
+  )?.childNodes;
+  if (!userNameElements) {
+    return { isEntryTweet: false, reason: "user name elements not found" };
+  }
+
+  const userName = Array.from(userNameElements, (node) => {
+    if (node instanceof HTMLSpanElement) return node.textContent;
+    if (node instanceof HTMLImageElement) return node.alt; // emoji
+  }).join("");
+  tweetMeta.userName = userName.trim();
+
+  const tweetDetailElement = userMetaElement.querySelector(
+    `div:nth-child(2) > div > div:nth-child(3) > a[role="link"]`,
+  );
+  if (!tweetDetailElement) {
+    return { isEntryTweet: false, reason: "tweet detail element not found" };
+  }
+  tweetMeta.date = tweetDetailElement.getElementsByTagName("time")[0]
+    ?.getAttribute("datetime") ?? "invalid date";
+  tweetMeta.url = tweetDetailElement.getAttribute("href") ?? "invalid url";
+
+  const tweet = node.querySelector( `div[data-testid="tweetText"]`,
+  );
+  if (!tweet) {
+    return { isEntryTweet: false, reason: "tweet text element not found" };
+  }
+  const round = tweet.textContent?.match(/(?<=KEEB_PD_R)\d+/);
+  if (!round) {
+    return { isEntryTweet: false, reason: "round information not found" };
+  }
+  tweetMeta.round = round[0];
+
+  return {
+    isEntryTweet: true,
+    tweet: tweetMeta,
+  };
 }

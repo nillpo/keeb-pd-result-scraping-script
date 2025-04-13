@@ -148,7 +148,7 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
     const tweetData = parseEntryTweet(node);
     console.log(
       "TWEET PARSE",
-      tweetData.isEntryTweet ? JSON.stringify(tweetData.tweet) : "invalid",
+      tweetData.isEntryTweet ? JSON.stringify(tweetData.tweet) : tweetData.reason,
     );
     if (retweetButton && tweetData.isEntryTweet) {
       retweetButton.addEventListener("click", () => {
