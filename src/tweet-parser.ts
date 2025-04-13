@@ -1,5 +1,3 @@
-import "@violentmonkey/types";
-
 export type Tweet = {
   date: string;
   fav: number;
