@@ -10,13 +10,18 @@ type MonitoringSearchPageSchema = StateTemplate<"MONITORING_SEARCH_PAGE">;
 type LoadingComposePageSchema = StateTemplate<"LOADING_COMPOSE_PAGE">;
 type MonitoringComposePageSchema = StateTemplate<"MONITORING_COMPOSE_PAGE">;
 
+type LoadingTweetDetailPage = StateTemplate<"LOADING_TWEET_DETAIL_PAGE">;
+type TweetDetailPage = StateTemplate<"TWEET_DETAIL_PAGE">;
+
 type StateSchema =
   | InitlaStateSchema
   | ObservingTwitterPageSchema
   | LoadingSearchPageSchema
   | MonitoringSearchPageSchema
   | LoadingComposePageSchema
-  | MonitoringComposePageSchema;
+  | MonitoringComposePageSchema
+  | LoadingTweetDetailPage
+  | TweetDetailPage;
 type State = StateSchema["state"];
 type StateEventType =
   | "INITIAL"
@@ -26,7 +31,9 @@ type StateEventType =
   | "SEARCH_PAGE_LOADED"
   | "COMPOSE_PAGE_LOADED"
   | "BEGIN_OBSERVING"
-  | "UPDATE_TWEET_CONTEXT";
+  | "UPDATE_TWEET_CONTEXT"
+  | "DETECT_TWEET_DETAIL_URL"
+  | "TWEET_DETAIL_PAGE_LOADED";
 
 type StateEventPayload<
   E extends StateEventType,
@@ -59,7 +66,14 @@ type UpdateTweetContextEvent = StateEventPayload<
   "UPDATE_TWEET_CONTEXT",
   { tweet: Tweet }
 >;
-
+type DetectTweetURLEvent = StateEventPayload<
+  "DETECT_TWEET_DETAIL_URL",
+  { url: string }
+>;
+type TweetDetailPageLoadedEvent = StateEventPayload<
+  "TWEET_DETAIL_PAGE_LOADED",
+  { css_selector: string }
+>;
 type StateEvents =
   | DetectComposeUrlEvent
   | DetectSearchUrlEvent
@@ -67,7 +81,9 @@ type StateEvents =
   | ComposePageLoadedEvent
   | PageChangedEvent
   | BeginObservingEvent
-  | UpdateTweetContextEvent;
+  | UpdateTweetContextEvent
+  | DetectTweetURLEvent
+  | TweetDetailPageLoadedEvent;
 
 export type Transition<T> = {
   from: State;

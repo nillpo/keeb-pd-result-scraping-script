@@ -98,6 +98,14 @@ const twitterPageObserver = new MutationObserver(() => {
     type: "COMPOSE_PAGE_LOADED",
     css_selector: `button[data-testid="unsentButton"]`,
   });
+  stateMachine.tryDispatch({
+    type: "DETECT_TWEET_DETAIL_URL",
+    url: document.location.pathname,
+  });
+  stateMachine.tryDispatch({
+    type: "TWEET_DETAIL_PAGE_LOADED",
+    css_selector: "WIPWIPWIPWIPWIPWIPWIPWIPWIPWIPWIP",
+  });
 
   if (stateMachine.canHandle("PAGE_CHANGED")) {
     switch (stateMachine.getState()) {
@@ -109,6 +117,13 @@ const twitterPageObserver = new MutationObserver(() => {
         break;
       }
       case "MONITORING_COMPOSE_PAGE": {
+        stateMachine.tryDispatch({
+          type: "PAGE_CHANGED",
+          url: document.location.pathname,
+        });
+        break;
+      }
+      case "TWEET_DETAIL_PAGE": {
         stateMachine.tryDispatch({
           type: "PAGE_CHANGED",
           url: document.location.pathname,
@@ -148,7 +163,9 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
     const tweetData = parseEntryTweet(node);
     console.log(
       "TWEET PARSE",
-      tweetData.isEntryTweet ? JSON.stringify(tweetData.tweet) : tweetData.reason,
+      tweetData.isEntryTweet
+        ? JSON.stringify(tweetData.tweet)
+        : tweetData.reason,
     );
     if (retweetButton && tweetData.isEntryTweet) {
       retweetButton.addEventListener("click", () => {
@@ -264,6 +281,41 @@ const transitions: Transition<StateContext>[] = [
     condition: (event) => {
       if (event.type !== "PAGE_CHANGED") return false;
       return event.url !== COMPOSE_POST_PATH;
+    },
+  },
+  {
+    from: "OBSERVING_TWITTER_PAGE",
+    event: "DETECT_TWEET_DETAIL_URL",
+    to: "LOADING_TWEET_DETAIL_PAGE",
+    condition: (event) => {
+      if (event.type !== "DETECT_TWEET_DETAIL_URL") return false;
+      if (event.url.match(/^\/.+\/status\/\d+/)) return true;
+      return false;
+    },
+  },
+  {
+    from: "LOADING_TWEET_DETAIL_PAGE",
+    event: "TWEET_DETAIL_PAGE_LOADED",
+    to: "TWEET_DETAIL_PAGE",
+    condition: (event) => {
+      if (event.type !== "TWEET_DETAIL_PAGE_LOADED") return false;
+      // TODO: Implement the condition to check if the tweet detail page is loaded
+      throw new Error("WIP"); 
+    },
+    execute: (event, context) => {
+      if (event.type !== "TWEET_DETAIL_PAGE_LOADED") return;
+      // TODO: Implement the logic to handle the tweet detail page loaded event
+      throw new Error("WIP");
+    },
+  },
+  {
+    from: "TWEET_DETAIL_PAGE",
+    event: "PAGE_CHANGED",
+    to: "OBSERVING_TWITTER_PAGE",
+    condition: (event) => {
+      if (event.type !== "PAGE_CHANGED") return false;
+      if (event.url.match(/^\/.+\/status\/\d+/)) return false;
+      return true;
     },
   },
 ];
