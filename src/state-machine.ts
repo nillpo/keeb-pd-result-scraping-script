@@ -1,32 +1,28 @@
 import { Tweet } from "./tweet-parser.ts";
 type StateTemplate<S> = { state: S };
 
-type InitialStateSchema = StateTemplate<"INITIAL">;
-type ObservingTwitterPageSchema = StateTemplate<"OBSERVING_TWITTER_PAGE">;
+type IdleStateSchema = StateTemplate<"IDLE">;
+type ObservingPageSchema = StateTemplate<"OBSERVING_PAGE">;
 
-type LoadingSearchPageSchema = StateTemplate<"LOADING_SEARCH_PAGE">;
-type MonitoringSearchPageSchema = StateTemplate<"MONITORING_SEARCH_PAGE">;
-
-type LoadingComposePageSchema = StateTemplate<"LOADING_COMPOSE_PAGE">;
-type MonitoringComposePageSchema = StateTemplate<"MONITORING_COMPOSE_PAGE">;
+type MonitoringSearchSchema = StateTemplate<"MONITORING_SEARCH">;
+type MonitoringComposeSchema = StateTemplate<"MONITORING_COMPOSE">;
+type MonitoringTweetDetailSchema = StateTemplate<"MONITORING_TWEET_DETAIL">;
 
 type StateSchema =
-  | InitialStateSchema
-  | ObservingTwitterPageSchema
-  | LoadingSearchPageSchema
-  | MonitoringSearchPageSchema
-  | LoadingComposePageSchema
-  | MonitoringComposePageSchema;
+  | IdleStateSchema
+  | ObservingPageSchema
+  | MonitoringSearchSchema
+  | MonitoringComposeSchema
+  | MonitoringTweetDetailSchema;
 type State = StateSchema["state"];
+
 type StateEventType =
-  | "INITIAL"
-  | "PAGE_CHANGED"
-  | "DETECT_SEARCH_URL"
-  | "DETECT_COMPOSE_URL"
-  | "SEARCH_PAGE_LOADED"
-  | "COMPOSE_PAGE_LOADED"
-  | "BEGIN_OBSERVING"
-  | "UPDATE_TWEET_CONTEXT";
+  | "START"
+  | "PAGE_CHANGE" 
+  | "SEARCH_PAGE_READY"
+  | "COMPOSE_PAGE_READY" 
+  | "TWEET_DETAIL_PAGE_READY"
+  | "TWEET_CONTEXT_UPDATED"; 
 
 type StateEventPayload<
   E extends StateEventType,
@@ -35,45 +31,37 @@ type StateEventPayload<
   type: E;
 } & T;
 
-type BeginObservingEvent = StateEventPayload<
-  "BEGIN_OBSERVING"
+type StartEvent = StateEventPayload<"START">; 
+type SearchPageReadyEvent = StateEventPayload<
+  "SEARCH_PAGE_READY",
+  { url: string; css_selector: string } 
 >;
-type DetectSearchUrlEvent = StateEventPayload<
-  "DETECT_SEARCH_URL",
-  { url: string }
+type ComposePageReadyEvent = StateEventPayload<
+  "COMPOSE_PAGE_READY",
+  { url: string; css_selector: string } 
 >;
-type DetectComposeUrlEvent = StateEventPayload<
-  "DETECT_COMPOSE_URL",
-  { url: string }
+type PageChangeEvent = StateEventPayload<"PAGE_CHANGE", { url: string }>;
+type TweetContextUpdatedEvent = StateEventPayload<
+  "TWEET_CONTEXT_UPDATED",
+  { tweet: Tweet } 
 >;
-type SearchPageLoadedEvent = StateEventPayload<
-  "SEARCH_PAGE_LOADED",
-  { css_selector: string }
+type TweetDetailPageReadyEvent = StateEventPayload<
+  "TWEET_DETAIL_PAGE_READY",
+  { url: string; css_selector: string } 
 >;
-type ComposePageLoadedEvent = StateEventPayload<
-  "COMPOSE_PAGE_LOADED",
-  { css_selector: string }
->;
-type PageChangedEvent = StateEventPayload<"PAGE_CHANGED", { url: string }>;
-type UpdateTweetContextEvent = StateEventPayload<
-  "UPDATE_TWEET_CONTEXT",
-  { tweet: Tweet }
->;
-
 type StateEvents =
-  | DetectComposeUrlEvent
-  | DetectSearchUrlEvent
-  | SearchPageLoadedEvent
-  | ComposePageLoadedEvent
-  | PageChangedEvent
-  | BeginObservingEvent
-  | UpdateTweetContextEvent;
+  | SearchPageReadyEvent
+  | ComposePageReadyEvent
+  | TweetDetailPageReadyEvent
+  | PageChangeEvent
+  | StartEvent
+  | TweetContextUpdatedEvent;
 
 export type Transition<T> = {
   from: State;
   to: State;
   event?: StateEventType;
-  condition?: (event: StateEvents) => boolean;
+  condition?: (event: StateEvents, context: T) => boolean;
   execute?: (event: StateEvents, context: T) => void;
 };
 
@@ -93,7 +81,7 @@ export class StateMachine<StateContext extends Record<string, unknown>> {
   private transitions: Transition<StateContext>[] = [];
   private context: StateContext;
 
-  constructor(initialState: State = "INITIAL", context: StateContext) {
+  constructor(initialState: State = "IDLE", context: StateContext) {
     this.currentState = initialState;
     this.context = context;
   }
@@ -149,7 +137,7 @@ export class StateMachine<StateContext extends Record<string, unknown>> {
     }
 
     if (matchedTransition.condition) {
-      return matchedTransition.condition(event);
+      return matchedTransition.condition(event, this.context);
     }
 
     return true;
@@ -174,7 +162,8 @@ export class StateMachine<StateContext extends Record<string, unknown>> {
     }
 
     if (
-      matchedTransition.condition && !matchedTransition.condition(event)
+      matchedTransition.condition &&
+      !matchedTransition.condition(event, this.context)
     ) {
       this.notifyListeners({
         event,
