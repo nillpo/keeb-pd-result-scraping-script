@@ -191,6 +191,10 @@ const transitions: Transition<StateContext>[] = [
     from: "INITIAL",
     to: "OBSERVING_TWITTER_PAGE",
     event: "BEGIN_OBSERVING",
+    condition: (event) => {
+      if (event.type !== "BEGIN_OBSERVING") return false;
+      return !!document.querySelector(event.css_selector);
+    },
     execute: observeTwitterPage,
   },
   {
@@ -270,5 +274,32 @@ const transitions: Transition<StateContext>[] = [
   },
 ];
 
+function start(stateMachine: StateMachine<StateContext>) {
+  if (stateMachine.canHandle("BEGIN_OBSERVING")) {
+    stateMachine.dispatch({
+      type: "BEGIN_OBSERVING",
+      css_selector: "#react-root",
+    });
+  }
+  let attempts = 0;
+  const maxAttempts = 10;
+  const checkInterval = setInterval(() => {
+    if (stateMachine.canHandle("BEGIN_OBSERVING")) {
+      stateMachine.dispatch({
+        type: "BEGIN_OBSERVING",
+        css_selector: "#react-root",
+      });
+      attempts++;
+
+      if (attempts >= maxAttempts) {
+        console.warn("Max attempts reached. Stopping the interval.");
+        clearInterval(checkInterval);
+      }
+    } else {
+      clearInterval(checkInterval);
+    }
+  }, 1000);
+}
+
 stateMachine.addTransitions(transitions);
-stateMachine.dispatch({ type: "BEGIN_OBSERVING" });
+start(stateMachine);

@@ -36,7 +36,8 @@ type StateEventPayload<
 } & T;
 
 type BeginObservingEvent = StateEventPayload<
-  "BEGIN_OBSERVING"
+  "BEGIN_OBSERVING",
+  { css_selector: string }
 >;
 type DetectSearchUrlEvent = StateEventPayload<
   "DETECT_SEARCH_URL",
