@@ -1,7 +1,7 @@
 import { Tweet } from "./tweet-parser.ts";
 type StateTemplate<S> = { state: S };
 
-type InitlaStateSchema = StateTemplate<"INITIAL">;
+type InitialStateSchema = StateTemplate<"INITIAL">;
 type ObservingTwitterPageSchema = StateTemplate<"OBSERVING_TWITTER_PAGE">;
 
 type LoadingSearchPageSchema = StateTemplate<"LOADING_SEARCH_PAGE">;
@@ -11,7 +11,7 @@ type LoadingComposePageSchema = StateTemplate<"LOADING_COMPOSE_PAGE">;
 type MonitoringComposePageSchema = StateTemplate<"MONITORING_COMPOSE_PAGE">;
 
 type StateSchema =
-  | InitlaStateSchema
+  | InitialStateSchema
   | ObservingTwitterPageSchema
   | LoadingSearchPageSchema
   | MonitoringSearchPageSchema
