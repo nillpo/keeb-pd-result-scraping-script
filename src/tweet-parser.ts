@@ -119,8 +119,7 @@ export function parseEntryTweet(
     ?.getAttribute("datetime") ?? "invalid date";
   tweetMeta.url = tweetDetailElement.getAttribute("href") ?? "invalid url";
 
-  const tweet = node.querySelector( `div[data-testid="tweetText"]`,
-  );
+  const tweet = node.querySelector(`div[data-testid="tweetText"]`);
   if (!tweet) {
     return { isEntryTweet: false, reason: "tweet text element not found" };
   }
