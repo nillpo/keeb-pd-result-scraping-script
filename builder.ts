@@ -1,5 +1,5 @@
 import * as esbuild from "esbuild";
-import { denoPlugins } from "@luca/esbuild-deno-loader";
+import { denoPlugin } from "@deno/esbuild-plugin";
 import { metablock } from "./src/metablock.ts";
 
 const url = new URL("./src/scriptbody.ts", import.meta.url);
@@ -9,7 +9,7 @@ const result = await esbuild.build({
   outdir: "./out",
   entryPoints: [url.toString()],
   write: false,
-  plugins: [...denoPlugins()],
+  plugins: [denoPlugin()],
   target: "esnext",
   platform: "browser",
   format: "esm",
