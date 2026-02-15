@@ -13,6 +13,7 @@ type StateContext = {
   twitterPageObserver: MutationObserver;
   listeners: number[];
   tweet: Tweet;
+  collectedTweets: Map<string, Tweet>;
 };
 
 const COMPOSE_POST_PATH = "/compose/post";
@@ -23,8 +24,7 @@ const isKEEBPDSearchURL = (url: URL) => {
     url.pathname === "/search" &&
     url.searchParams.get("f") === "live" &&
     query &&
-    query.match(/#KEEB_PD_R\d+/g) &&
-    query.match(/min_faves:\d+/g)
+    query.match(/#KEEB_PD_R\d+/g)
   ) {
     return true;
   }
@@ -53,6 +53,15 @@ const disconnectSearchTimeline: ExecuteHandler<StateContext> = (
   context,
 ) => {
   context.searchTimelineObserver.disconnect();
+
+  // Remove download panel from DOM
+  const panel = document.getElementById("keeb-pd-download-panel");
+  if (panel) panel.remove();
+
+  // Clear counter update intervals
+  context.listeners.forEach((id) => clearInterval(id));
+  context.listeners = [];
+
   console.info("disconnect!");
 };
 
@@ -79,6 +88,110 @@ const setupComposePage: ExecuteHandler<StateContext> = (event, context) => {
      background-repeat: no-repeat;
      -webkit-text-fill-color: transparent;`;
   unsetButton.append(div);
+};
+
+const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
+  if (event.type !== "SEARCH_PAGE_LOADED") return;
+
+  // Remove existing panel if present (handles re-navigation)
+  const existing = document.getElementById("keeb-pd-download-panel");
+  if (existing) existing.remove();
+
+  // Create floating control panel
+  const controlPanel = document.createElement("div");
+  controlPanel.id = "keeb-pd-download-panel";
+  controlPanel.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(29, 155, 240, 0.9);
+    padding: 12px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  `;
+
+  // Counter badge
+  const counterBadge = document.createElement("div");
+  counterBadge.style.cssText = `
+    background: rgb(239, 243, 244);
+    color: rgb(15, 20, 25);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    text-align: center;
+    font-weight: 600;
+  `;
+
+  // Download button
+  const downloadButton = document.createElement("button");
+  downloadButton.textContent = "⬇ Download JSON";
+  downloadButton.style.cssText = `
+    background: white;
+    color: rgb(29, 155, 240);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+  `;
+
+  // Clear button
+  const clearButton = document.createElement("button");
+  clearButton.textContent = "🗑 Clear All";
+  clearButton.style.cssText = downloadButton.style.cssText;
+
+  // Update counter display
+  const updateCounter = () => {
+    const count = context.collectedTweets.size;
+    counterBadge.textContent = `${count} tweet${count !== 1 ? "s" : ""} collected`;
+    downloadButton.disabled = count === 0;
+    downloadButton.style.opacity = count === 0 ? "0.5" : "1";
+    downloadButton.style.cursor = count === 0 ? "not-allowed" : "pointer";
+  };
+
+  // Download handler
+  downloadButton.addEventListener("click", () => {
+    const tweets = Array.from(context.collectedTweets.values());
+    const json = JSON.stringify(tweets, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    a.download = `keeb-pd-tweets-${timestamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log(`Downloaded ${tweets.length} tweets`);
+  });
+
+  // Clear handler
+  clearButton.addEventListener("click", () => {
+    if (confirm(`Clear ${context.collectedTweets.size} collected tweets?`)) {
+      context.collectedTweets.clear();
+      updateCounter();
+      console.log("Cleared all collected tweets");
+    }
+  });
+
+  // Initial update and periodic refresh
+  updateCounter();
+  const intervalId = setInterval(updateCounter, 1000);
+  context.listeners.push(intervalId);
+
+  // Assemble and attach to page
+  controlPanel.appendChild(counterBadge);
+  controlPanel.appendChild(downloadButton);
+  controlPanel.appendChild(clearButton);
+  document.body.appendChild(controlPanel);
 };
 
 const twitterPageObserver = new MutationObserver(() => {
@@ -146,12 +259,23 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
     const retweetButton = node.querySelector(`button[data-testid="retweet"]`) ??
       node.querySelector(`button[data-testid="unretweet"]`);
     const tweetData = parseEntryTweet(node);
+
     console.log(
       "TWEET PARSE",
       tweetData.isEntryTweet
         ? JSON.stringify(tweetData.tweet)
         : tweetData.reason,
     );
+
+    // Auto-collect valid tweets
+    if (tweetData.isEntryTweet) {
+      stateMachine.dispatch({
+        type: "COLLECT_TWEET",
+        tweet: { ...tweetData.tweet },
+      });
+    }
+
+    // Keep retweet button functionality for compose page
     if (retweetButton && tweetData.isEntryTweet) {
       retweetButton.addEventListener("click", () => {
         stateMachine.dispatch({
@@ -175,6 +299,7 @@ const stateMachine = new StateMachine<StateContext>("INITIAL", {
     url: "",
     userName: "",
   },
+  collectedTweets: new Map<string, Tweet>(),
 });
 
 stateMachine.addListener((result) => {
@@ -212,7 +337,10 @@ const transitions: Transition<StateContext>[] = [
       if (!searchTimelineElement) return false;
       return true;
     },
-    execute: observeSearchTimeline,
+    execute: (event, context) => {
+      observeSearchTimeline(event, context);
+      setupDownloadButton(event, context);
+    },
   },
   {
     from: "MONITORING_SEARCH_PAGE",
@@ -221,6 +349,18 @@ const transitions: Transition<StateContext>[] = [
     execute: (event, context) => {
       if (event.type !== "UPDATE_TWEET_CONTEXT") return;
       context.tweet = { ...event.tweet };
+    },
+  },
+  {
+    from: "MONITORING_SEARCH_PAGE",
+    event: "COLLECT_TWEET",
+    to: "MONITORING_SEARCH_PAGE",
+    execute: (event, context) => {
+      if (event.type !== "COLLECT_TWEET") return;
+      context.collectedTweets.set(event.tweet.url, event.tweet);
+      console.log(
+        `Collected: ${event.tweet.url} (Total: ${context.collectedTweets.size})`,
+      );
     },
   },
   {

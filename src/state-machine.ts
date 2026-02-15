@@ -26,7 +26,8 @@ type StateEventType =
   | "SEARCH_PAGE_LOADED"
   | "COMPOSE_PAGE_LOADED"
   | "BEGIN_OBSERVING"
-  | "UPDATE_TWEET_CONTEXT";
+  | "UPDATE_TWEET_CONTEXT"
+  | "COLLECT_TWEET";
 
 type StateEventPayload<
   E extends StateEventType,
@@ -59,6 +60,10 @@ type UpdateTweetContextEvent = StateEventPayload<
   "UPDATE_TWEET_CONTEXT",
   { tweet: Tweet }
 >;
+type CollectTweetEvent = StateEventPayload<
+  "COLLECT_TWEET",
+  { tweet: Tweet }
+>;
 
 type StateEvents =
   | DetectComposeUrlEvent
@@ -67,7 +72,8 @@ type StateEvents =
   | ComposePageLoadedEvent
   | PageChangedEvent
   | BeginObservingEvent
-  | UpdateTweetContextEvent;
+  | UpdateTweetContextEvent
+  | CollectTweetEvent;
 
 export type Transition<T> = {
   from: State;
