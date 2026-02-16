@@ -207,7 +207,7 @@ const twitterPageObserver = new MutationObserver(() => {
   });
   stateMachine.tryDispatch({
     type: "DETECT_COMPOSE_URL",
-    url: document.location.pathname,
+    url: document.location.href,
   });
   stateMachine.tryDispatch({
     type: "COMPOSE_PAGE_LOADED",
@@ -226,7 +226,7 @@ const twitterPageObserver = new MutationObserver(() => {
       case "MONITORING_COMPOSE_PAGE": {
         stateMachine.tryDispatch({
           type: "PAGE_CHANGED",
-          url: document.location.pathname,
+          url: document.location.href,
         });
         break;
       }
@@ -388,7 +388,7 @@ const transitions: Transition<StateContext>[] = [
     to: "LOADING_COMPOSE_PAGE",
     condition: (event) => {
       if (event.type !== "DETECT_COMPOSE_URL") return false;
-      return event.url === COMPOSE_POST_PATH;
+      return new URL(event.url).pathname === COMPOSE_POST_PATH;
     },
   },
   {
@@ -407,17 +407,10 @@ const transitions: Transition<StateContext>[] = [
   {
     from: "MONITORING_COMPOSE_PAGE",
     event: "PAGE_CHANGED",
-    to: "OBSERVING_TWITTER_PAGE",
+    to: "MONITORING_SEARCH_PAGE",
     condition: (event) => {
       if (event.type !== "PAGE_CHANGED") return false;
-      return event.url !== COMPOSE_POST_PATH;
-    },
-    execute: (event, context) => {
-      if (event.type !== "PAGE_CHANGED") return;
-      // RTページ->検索ページ以外
-      if (!isKEEBPDSearchURL(new URL(event.url))) {
-        context.collectedTweets.clear();
-      }
+      return isKEEBPDSearchURL(new URL(event.url));
     },
   },
 ];
