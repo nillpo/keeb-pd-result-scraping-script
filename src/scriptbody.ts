@@ -90,6 +90,13 @@ const setupComposePage: ExecuteHandler<StateContext> = (event, context) => {
   unsetButton.append(div);
 };
 
+const getTop5Tweets = (tweets: Map<string, Tweet>): Tweet[] => {
+  const sortedTweets = Array.from(tweets.values()).sort((a, b) =>
+    b.fav - a.fav
+  );
+  return sortedTweets.slice(0, 5);
+};
+
 const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
   if (event.type !== "SEARCH_PAGE_LOADED") return;
 
@@ -145,6 +152,108 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
   clearButton.textContent = "🗑 Clear All";
   clearButton.style.cssText = downloadButton.style.cssText;
 
+  // Top 5 Container
+  const top5Container = document.createElement("div");
+  top5Container.id = "keeb-pd-top5-container";
+  top5Container.style.cssText = `
+    background: white;
+    border-radius: 12px;
+    padding: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  `;
+
+  // Title
+  const top5Title = document.createElement("div");
+  top5Title.textContent = "Top 5 ふぁぼ数";
+  top5Title.style.cssText = `
+    font-size: 13px;
+    font-weight: 600;
+    color: rgb(15, 20, 25);
+    margin-bottom: 6px;
+    text-align: center;
+  `;
+
+  // List
+  const top5List = document.createElement("div");
+  top5List.id = "keeb-pd-top5-list";
+  top5List.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  `;
+
+  top5Container.appendChild(top5Title);
+  top5Container.appendChild(top5List);
+
+  // Create Top 5 item
+  const createTop5Item = (tweet: Tweet, rank: number): HTMLDivElement => {
+    const item = document.createElement("div");
+    item.style.cssText = `
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgb(239, 243, 244);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      font-size: 12px;
+    `;
+
+    // Hover effect
+    item.addEventListener("mouseenter", () => {
+      item.style.backgroundColor = "rgb(215, 227, 234)";
+    });
+    item.addEventListener("mouseleave", () => {
+      item.style.backgroundColor = "rgb(239, 243, 244)";
+    });
+
+    // Content elements
+    const rankBadge = document.createElement("span");
+    rankBadge.textContent = `${rank}.`;
+    rankBadge.style.cssText = `
+      font-weight: 700;
+      color: rgb(29, 155, 240);
+      margin-right: 4px;
+    `;
+
+    const userName = document.createElement("span");
+    userName.textContent = tweet.userName;
+    userName.style.cssText = `
+      font-weight: 500;
+      color: rgb(15, 20, 25);
+      margin-right: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 120px;
+      display: inline-block;
+      vertical-align: middle;
+    `;
+
+    const favCount = document.createElement("span");
+    favCount.textContent = `❤${tweet.fav}`;
+    favCount.style.cssText = `
+      font-weight: 600;
+      color: rgb(249, 24, 128);
+    `;
+
+    item.appendChild(rankBadge);
+    item.appendChild(userName);
+    item.appendChild(favCount);
+
+    // Click handler: Open tweet in new tab
+    item.addEventListener("click", () => {
+      const baseUrl = globalThis.location.hostname === "x.com"
+        ? "https://x.com"
+        : "https://twitter.com";
+      const fullUrl = `${baseUrl}${tweet.url}`;
+      globalThis.open(fullUrl, "_blank");
+      console.log(`Opened tweet in new tab: ${fullUrl}`);
+    });
+
+    return item;
+  };
+
   // Update counter display
   const updateCounter = () => {
     const count = context.collectedTweets.size;
@@ -154,6 +263,22 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
     downloadButton.disabled = count === 0;
     downloadButton.style.opacity = count === 0 ? "0.5" : "1";
     downloadButton.style.cursor = count === 0 ? "not-allowed" : "pointer";
+
+    // Update Top 5 list
+    const top5Tweets = getTop5Tweets(context.collectedTweets);
+
+    if (top5Tweets.length > 0) {
+      top5Container.style.display = "block";
+    } else {
+      top5Container.style.display = "none";
+    }
+
+    top5List.innerHTML = "";
+
+    top5Tweets.forEach((tweet, index) => {
+      const item = createTop5Item(tweet, index + 1);
+      top5List.appendChild(item);
+    });
   };
 
   // Download handler
@@ -191,6 +316,7 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
 
   // Assemble and attach to page
   controlPanel.appendChild(counterBadge);
+  controlPanel.appendChild(top5Container);
   controlPanel.appendChild(downloadButton);
   controlPanel.appendChild(clearButton);
   document.body.appendChild(controlPanel);
