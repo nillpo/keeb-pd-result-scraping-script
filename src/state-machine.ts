@@ -19,7 +19,6 @@ type StateSchema =
   | MonitoringComposePageSchema;
 type State = StateSchema["state"];
 type StateEventType =
-  | "INITIAL"
   | "PAGE_CHANGED"
   | "DETECT_SEARCH_URL"
   | "DETECT_COMPOSE_URL"
