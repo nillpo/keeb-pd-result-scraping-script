@@ -148,7 +148,9 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
   // Update counter display
   const updateCounter = () => {
     const count = context.collectedTweets.size;
-    counterBadge.textContent = `${count} tweet${count !== 1 ? "s" : ""} collected`;
+    counterBadge.textContent = `${count} tweet${
+      count !== 1 ? "s" : ""
+    } collected`;
     downloadButton.disabled = count === 0;
     downloadButton.style.opacity = count === 0 ? "0.5" : "1";
     downloadButton.style.cursor = count === 0 ? "not-allowed" : "pointer";
@@ -375,7 +377,10 @@ const transitions: Transition<StateContext>[] = [
       }
       return true;
     },
-    execute: disconnectSearchTimeline,
+    execute: (event, context) => {
+      disconnectSearchTimeline(event, context);
+      context.collectedTweets.clear();
+    },
   },
   {
     from: "MONITORING_SEARCH_PAGE",
@@ -406,6 +411,13 @@ const transitions: Transition<StateContext>[] = [
     condition: (event) => {
       if (event.type !== "PAGE_CHANGED") return false;
       return event.url !== COMPOSE_POST_PATH;
+    },
+    execute: (event, context) => {
+      if (event.type !== "PAGE_CHANGED") return;
+      // RTページ->検索ページ以外
+      if (!isKEEBPDSearchURL(new URL(event.url))) {
+        context.collectedTweets.clear();
+      }
     },
   },
 ];
