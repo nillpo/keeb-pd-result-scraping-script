@@ -174,7 +174,11 @@ type StateEventType =
    - 条件: 現在のURLが監視対象でなくなった
    - 遷移: `MONITORING_SEARCH_PAGE` または `MONITORING_COMPOSE_PAGE` →
      `OBSERVING_TWITTER_PAGE`
-   - 実行: `disconnectSearchTimeline`（クリーンアップ）
+   - 実行:
+     - 検索ページからの離脱: `disconnectSearchTimeline` +
+       `collectedTweets.clear()`
+     - 投稿ページからの離脱: 離脱先が検索ページ以外の場合のみ
+       `collectedTweets.clear()`
 
 7. **UPDATE_TWEET_CONTEXT**: リツイートボタンクリックで選択ツイートを保存
    - ペイロード: `{ tweet: Tweet }`
@@ -395,6 +399,9 @@ observer.observe(document, {
 - `searchTimelineObserver.disconnect()`: Observer停止
 - フローティングパネルの削除
 - `setInterval` のクリア
+- `context.collectedTweets.clear()`: 収集したツイートデータをクリア（v1.x以降）
+
+**実装箇所**: scriptbody.ts:380-383（遷移定義内）
 
 **4. `setupDownloadButton`**
 
@@ -491,6 +498,73 @@ observer.observe(document, {
 12. getTweetText(context.tweet) で祝福メッセージ生成
     ↓
 13. navigator.clipboard.writeText(text) でクリップボードにコピー
+```
+
+## データライフサイクル管理
+
+### 収集ツイートデータの管理
+
+収集したツイートデータ（`context.collectedTweets`）は以下のライフサイクルで管理されます。
+
+**データ構造**:
+
+```typescript
+collectedTweets: Map<string, Tweet>;
+```
+
+- **キー**: ツイートのURLパス（重複排除用）
+- **値**: Tweetオブジェクト（メタデータ）
+
+**データの追加**:
+
+- `COLLECT_TWEET` イベント発火時（検索ページでの自動収集）
+- `Map.set()` で追加（既存キーの場合は上書き）
+
+**データのクリア**:
+
+1. **検索ページ離脱時**（自動）:
+   - トリガー: `MONITORING_SEARCH_PAGE` →
+     `OBSERVING_TWITTER_PAGE`（`PAGE_CHANGED`）
+   - 条件: 離脱先がKEEB_PD検索URL以外
+   - 処理: `context.collectedTweets.clear()`
+   - 実装: scriptbody.ts:380-383
+
+2. **投稿ページ離脱時**（条件付き自動）:
+   - トリガー: `MONITORING_COMPOSE_PAGE` →
+     `OBSERVING_TWITTER_PAGE`（`PAGE_CHANGED`）
+   - 条件: 離脱先がKEEB_PD検索URL以外
+   - 処理: `context.collectedTweets.clear()`
+   - 実装: scriptbody.ts:415-421
+   - **例外**: 投稿ページ→検索ページに戻る場合はクリアしない
+
+3. **ユーザー操作**（手動）:
+   - トリガー: フローティングパネルの「🗑 Clear All」ボタンをクリック
+   - 確認: `confirm()` ダイアログで確認
+   - 処理: `context.collectedTweets.clear()`
+
+**設計理念**:
+
+この自動クリア機能により、以下を実現します：
+
+- **データ混在の防止**: 異なるラウンドや検索条件のツイートが混ざらない
+- **ワークフロー保持**: 検索ページ ↔
+  投稿ページ間ではデータを保持し、リツイートボタン連携が機能する
+- **メモリ管理**:
+  不要になったデータを自動的に解放し、長時間使用時のメモリリークを防ぐ
+
+**フロー図**:
+
+```
+KEEB_PD検索ページ (R1)
+  ├─ ツイート収集 → collectedTweets に追加
+  ├─ 投稿ページに移動 → データ保持 ✓
+  │   └─ 検索ページに戻る → データ保持 ✓
+  ├─ ホームに移動 → データクリア ✓
+  └─ 別の検索ページ (R2) に移動 → データクリア ✓
+
+投稿ページ
+  ├─ 検索ページに戻る → データ保持 ✓
+  └─ ホームに移動 → データクリア ✓
 ```
 
 ## セキュリティ設計
