@@ -270,8 +270,8 @@ cd keeb-pd-scraper
 ```jsonc
 {
   "imports": {
-    "esbuild": "npm:esbuild@^0.24.0",
-    "esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@^0.11.0"
+    "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",
+    "esbuild": "npm:esbuild@^0.27.3"
   }
 }
 ```
@@ -340,7 +340,7 @@ deno task build
 
 1. **esbuildでバンドル**:
    - エントリーポイント: `src/scriptbody.ts`
-   - プラグイン: `denoLoaderPlugin` でDeno importsを解決
+   - プラグイン: `denoPlugin` でDeno importsを解決
    - 出力: 一時的なJavaScriptコード
 
 2. **メタデータヘッダー追加**:
@@ -357,10 +357,11 @@ deno task build
 
 ```typescript
 import * as esbuild from "esbuild";
-import { denoLoaderPlugin } from "esbuild-deno-loader";
+import { denoPlugin } from "@deno/esbuild-plugin";
+import { metablock } from "./src/metablock.ts";
 
 const result = await esbuild.build({
-  plugins: [denoLoaderPlugin()],
+  plugins: [denoPlugin()],
   entryPoints: ["./src/scriptbody.ts"],
   bundle: true,
   format: "iife",
@@ -368,8 +369,7 @@ const result = await esbuild.build({
 });
 
 const code = new TextDecoder().decode(result.outputFiles[0].contents);
-const metablock = await import("./src/metablock.ts");
-const script = metablock.default + "\n" + code;
+const script = metablock + "\n" + code;
 
 await Deno.writeTextFile("./out/script.js", script);
 
@@ -639,7 +639,7 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
 **エラー例**:
 
 ```
-error: Module not found "jsr:@luca/esbuild-deno-loader@^0.11.0"
+error: Module not found "jsr:@deno/esbuild-plugin@^1.2.1"
 ```
 
 **解決方法**:
