@@ -539,6 +539,22 @@ const transitions: Transition<StateContext>[] = [
       return isKEEBPDSearchURL(new URL(event.url));
     },
   },
+  {
+    from: "MONITORING_COMPOSE_PAGE",
+    event: "PAGE_CHANGED",
+    to: "OBSERVING_TWITTER_PAGE",
+    condition: (event) => {
+      if (event.type !== "PAGE_CHANGED") return false;
+      const url = new URL(event.url);
+      if (isKEEBPDSearchURL(url)) return false;
+      if (url.pathname === COMPOSE_POST_PATH) return false;
+      return true;
+    },
+    execute: (_event, context) => {
+      context.collectedTweets.clear();
+      console.info("Cleared tweets on navigation from compose page");
+    },
+  },
 ];
 
 stateMachine.addTransitions(transitions);
