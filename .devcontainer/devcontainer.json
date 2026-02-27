@@ -6,6 +6,13 @@
   "features": {
     "ghcr.io/devcontainers/features/github-cli:latest": {}
   },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "denoland.vscode-deno"
+      ]
+    }
+  },
   "mounts": [
     "source=keeb-pd-claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
     "source=keeb-pd-claude-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
