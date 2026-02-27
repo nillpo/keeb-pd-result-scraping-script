@@ -245,7 +245,79 @@ const updateCounter = () => {
 setInterval(updateCounter, 1000);
 ```
 
-#### 2. ダウンロードボタン
+#### 2. Top 5いいね数ランキング
+
+**表示内容**: 収集したツイートのうち、いいね数上位5件をランキング形式で表示
+
+**表示形式**:
+
+```
+🥇 userName (12345 ♥)
+🥈 userName (9876 ♥)
+🥉 userName (5432 ♥)
+4. userName (3210 ♥)
+5. userName (1987 ♥)
+```
+
+**インタラクション**:
+
+- **ホバー効果**: マウスオーバーで背景色変更（`rgba(59, 130, 246, 0.1)`）
+- **クリック動作**: ツイートを新規タブで開く（`window.open(url, "_blank")`）
+- **カーソル**: ポインターカーソル表示
+
+**表示条件**:
+
+- **表示**: 収集ツイート数 > 0
+- **非表示**: 収集ツイート数 = 0（`display: none`）
+
+**更新頻度**: 1秒ごとに自動更新（counterBadgeと同じsetInterval）
+
+**ソート順**: いいね数降順（`sort((a, b) => b.fav - a.fav)`）
+
+**技術的な実装**:
+
+```typescript
+// scriptbody.ts:93-282
+const rankingList = document.createElement("div");
+rankingList.id = "keeb-pd-ranking-list";
+
+const updateCounter = () => {
+  // ... counter update logic ...
+
+  // Top 5 ranking update
+  const tweets = Array.from(context.collectedTweets.values());
+  const top5 = tweets.sort((a, b) => b.fav - a.fav).slice(0, 5);
+
+  if (top5.length > 0) {
+    rankingList.style.display = "block";
+    rankingList.innerHTML = top5
+      .map((tweet, index) => {
+        const rankEmoji = ["🥇", "🥈", "🥉", "4.", "5."][index];
+        return `<div class="ranking-item" data-url="${tweet.url}">
+          ${rankEmoji} ${tweet.userName} (${tweet.fav} ♥)
+        </div>`;
+      })
+      .join("");
+  } else {
+    rankingList.style.display = "none";
+  }
+};
+```
+
+**実装箇所**: `scriptbody.ts:93-282`
+
+**スタイル詳細**:
+
+- **フォント**: `14px`
+- **余白**: 各アイテム `8px`
+- **ボーダー下**: `1px solid rgba(255, 255, 255, 0.1)`（最後の要素以外）
+- **テキストカラー**: `white`
+- **ホバー背景**: `rgba(59, 130, 246, 0.1)`
+- **トランジション**: `background-color 0.2s`
+
+**URL生成パターン**: `https://x.com${tweet.url}`
+
+#### 3. ダウンロードボタン
 
 **ラベル**: `⬇ Download JSON`
 
@@ -263,7 +335,7 @@ setInterval(updateCounter, 1000);
 - 有効時: 白背景、青文字、ポインターカーソル
 - 無効時: 半透明、クリック不可カーソル
 
-#### 3. クリアボタン
+#### 4. クリアボタン
 
 **ラベル**: `🗑 Clear All`
 
