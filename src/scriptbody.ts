@@ -24,7 +24,7 @@ const isKEEBPDSearchURL = (url: URL) => {
     url.pathname === "/search" &&
     url.searchParams.get("f") === "live" &&
     query &&
-    query.match(/#KEEB_PD_R\d+/g)
+    query.match(/KEEB_PD_R\d+/g)
   ) {
     return true;
   }
