@@ -123,7 +123,7 @@ type State =
    - `COMPOSE_PAGE_LOADED` で `MONITORING_COMPOSE_PAGE` に遷移
 
 6. **MONITORING_COMPOSE_PAGE**: 投稿ページでコピーボタンを表示中
-   - 犬の絵文字（🐶）ボタンが表示されている
+   - 足跡アイコンのボタンが表示されている
    - ボタンクリックで祝福メッセージをクリップボードにコピー
 
 ### 8つのイベントタイプ
@@ -416,7 +416,7 @@ observer.observe(document, {
 
 **5. `setupComposePage`**
 
-投稿ページにコピーボタン（🐶）を追加します。
+投稿ページにコピーボタン（足跡アイコン）を追加します。
 
 **ボタン動作**:
 
@@ -492,9 +492,9 @@ observer.observe(document, {
    ↓
 9. LOADING_COMPOSE_PAGE → MONITORING_COMPOSE_PAGE
    ↓
-10. setupComposePage() 実行: コピーボタン（🐶）追加
+10. setupComposePage() 実行: コピーボタン（足跡アイコン）追加
     ↓
-11. ユーザーが🐶ボタンをクリック
+11. ユーザーが足跡ボタンをクリック
     ↓
 12. getTweetText(context.tweet) で祝福メッセージ生成
     ↓
@@ -547,7 +547,7 @@ collectedTweets: Map<string, Tweet>;
    - 実装: scriptbody.ts:542-558
 
 3. **ユーザー操作**（手動）:
-   - トリガー: フローティングパネルの「🗑 Clear All」ボタンをクリック
+   - トリガー: フローティングパネルの「Clear All」ボタンをクリック
    - 確認: `confirm()` ダイアログで確認
    - 処理: `context.collectedTweets.clear()`
 

@@ -68,7 +68,7 @@ Tweetオブジェクト
 
 **手動クリア**:
 
-- フローティングパネルの「🗑 Clear All」ボタンをクリック
+- フローティングパネルの「Clear All」ボタンをクリック
 
 この設計により、異なるラウンドや検索条件のツイートが混在することを防ぎつつ、検索ページと投稿ページ間のワークフロー（リツイートボタンで選択→投稿ページで祝福メッセージをコピー）はスムーズに利用できます。
 
@@ -108,7 +108,7 @@ Collected: /username/status/123 (Total: 5)
 
 ### ダウンロード手順
 
-1. フローティングパネルの「⬇ Download JSON」ボタンをクリック
+1. フローティングパネルの「Download JSON」ボタンをクリック
 2. ブラウザのダウンロードフォルダに自動保存される
 3. ファイル名にはタイムスタンプが含まれる
 
@@ -271,12 +271,14 @@ setInterval(updateCounter, 1000);
 **表示形式**:
 
 ```
-🥇 userName (12345 ♥)
-🥈 userName (9876 ♥)
-🥉 userName (5432 ♥)
-4. userName (3210 ♥)
-5. userName (1987 ♥)
+1. userName ♥12345
+2. userName ♥9876
+3. userName ♥5432
+4. userName ♥3210
+5. userName ♥1987
 ```
+
+`♥` はハートのアイコン（SVG。`src/icons.ts` の `heart`）です。色はいいね数と同じピンク（`rgb(249, 24, 128)`）になります。
 
 **インタラクション**:
 
@@ -296,34 +298,20 @@ setInterval(updateCounter, 1000);
 **技術的な実装**:
 
 ```typescript
-// scriptbody.ts:93-282
-const rankingList = document.createElement("div");
-rankingList.id = "keeb-pd-ranking-list";
+// 各アイテムは createElement で組み立てる（innerHTML は使わない）
+const rankBadge = document.createElement("span");
+rankBadge.textContent = `${rank}.`;
 
-const updateCounter = () => {
-  // ... counter update logic ...
+const userName = document.createElement("span");
+userName.textContent = tweet.userName;
 
-  // Top 5 ranking update
-  const tweets = Array.from(context.collectedTweets.values());
-  const top5 = tweets.sort((a, b) => b.fav - a.fav).slice(0, 5);
+const favCount = document.createElement("span");
+favCount.append(createIcon("heart", "0.9em"), String(tweet.fav));
 
-  if (top5.length > 0) {
-    rankingList.style.display = "block";
-    rankingList.innerHTML = top5
-      .map((tweet, index) => {
-        const rankEmoji = ["🥇", "🥈", "🥉", "4.", "5."][index];
-        return `<div class="ranking-item" data-url="${tweet.url}">
-          ${rankEmoji} ${tweet.userName} (${tweet.fav} ♥)
-        </div>`;
-      })
-      .join("");
-  } else {
-    rankingList.style.display = "none";
-  }
-};
+item.append(rankBadge, userName, favCount);
 ```
 
-**実装箇所**: `scriptbody.ts:93-282`
+**実装箇所**: `src/scriptbody.ts`（`setupDownloadButton`）、アイコンは `src/icons.ts`
 
 **スタイル詳細**:
 
@@ -338,7 +326,7 @@ const updateCounter = () => {
 
 #### 3. ダウンロードボタン
 
-**ラベル**: `⬇ Download JSON`
+**ラベル**: `Download JSON`（ダウンロードアイコン付き）
 
 **動作**:
 
@@ -356,7 +344,7 @@ const updateCounter = () => {
 
 #### 4. クリアボタン
 
-**ラベル**: `🗑 Clear All`
+**ラベル**: `Clear All`（ゴミ箱アイコン付き）
 
 **動作**:
 
@@ -433,8 +421,8 @@ clearButton.addEventListener("click", () => {
 
 #### ステップ3: コピーボタンをクリック
 
-1. 投稿ページで送信ボタン（「ポストする」）の近くに犬の絵文字（🐶）ボタンが表示される
-2. 🐶ボタンをクリック
+1. 投稿ページで送信ボタン（「ポストする」）の近くに足跡アイコンのボタンが表示される
+2. 足跡ボタンをクリック
 3. 祝福メッセージがクリップボードにコピーされる
 4. 投稿ボックスに貼り付け（Ctrl+V / Cmd+V）
 
@@ -458,10 +446,10 @@ clearButton.addEventListener("click", () => {
 
 ### コピーボタンのデザイン
 
-**アイコン**: 犬の絵文字（🐶）
+**アイコン**: 足跡（SVG。`src/icons.ts` の `paw`）
 
 **画像ソース**:
-Twitter公式の絵文字画像（`https://abs-0.twimg.com/emoji/v2/svg/1f436.svg`）
+スクリプトに埋め込んだ SVG（`src/icons.ts`）。外部の画像は読み込みません。色は `currentColor` で、ボタンの色（Twitterのアクセントカラー `rgb(29, 155, 240)`）に従います
 
 **サイズ**: 1.5em × 1.5em
 
@@ -482,7 +470,7 @@ if (retweetButton && tweetData.isEntryTweet) {
 }
 ```
 
-**コピーボタンの作成**（scriptbody.ts:68-91）:
+**コピーボタンの作成**（`src/scriptbody.ts` の `setupComposePage`）:
 
 ```typescript
 const div = document.createElement("div");
@@ -494,13 +482,12 @@ div.addEventListener("click", (target) => {
   }
 });
 
-div.style.cssText = `height: 1.5em; width: 1.5em;
-   background-image: url("https://abs-0.twimg.com/emoji/v2/svg/1f436.svg");
-   background-size: 1.5em 1.5em;
+div.style.cssText = `display: flex; align-items: center; justify-content: center;
+   height: 1.5em; width: 1.5em;
    padding: 0.15em;
-   background-position: center center;
-   background-repeat: no-repeat;
-   -webkit-text-fill-color: transparent;`;
+   color: rgb(29, 155, 240);
+   cursor: pointer;`;
+div.append(createIcon("paw", "1.5em"));
 unsetButton.append(div);
 ```
 
@@ -623,9 +610,9 @@ const isKEEBPDSearchURL = (url: URL) => {
    ↓
 9. 送信ボタン検出（COMPOSE_PAGE_LOADED）
    ↓
-10. 犬の絵文字（🐶）ボタンが表示される
+10. 足跡アイコンのボタンが表示される
     ↓
-11. ユーザーが🐶ボタンをクリック
+11. ユーザーが足跡ボタンをクリック
     ↓
 12. 祝福メッセージがクリップボードにコピーされる
     コンソール: "Text copied!"
@@ -643,7 +630,7 @@ const isKEEBPDSearchURL = (url: URL) => {
 1. ユーザーがKEEB_PD検索ページでツイート収集中
    カウンター: "50 tweets collected"
    ↓
-2. ユーザーがクリアボタン（🗑 Clear All）をクリック
+2. ユーザーがクリアボタン（Clear All）をクリック
    ↓
 3. 確認ダイアログ表示
    メッセージ: "Clear 50 collected tweets?"
