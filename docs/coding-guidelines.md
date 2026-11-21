@@ -295,17 +295,15 @@ const validNodes = mutations
 
 要素の追加・削除時は、既存の要素との競合を避けます。
 
-**良い例** (scriptbody.ts:96-98):
+**良い例** (`src/scriptbody.ts` の `setupDownloadButton`):
 
 ```typescript
 // 既存のパネルを削除してから新しいパネルを追加
-const existing = document.getElementById("keeb-pd-download-panel");
-if (existing) existing.remove();
+document.getElementById(PANEL_ID)?.remove();
 
-const controlPanel = document.createElement("div");
-controlPanel.id = "keeb-pd-download-panel";
+const panel = createPanel({ onDownload, onClear }); // src/panel.ts（idは PANEL_ID）
 // ...
-document.body.appendChild(controlPanel);
+document.body.appendChild(panel.element);
 ```
 
 ## 状態機械設計パターン
@@ -502,7 +500,7 @@ const disconnectSearchTimeline: ExecuteHandler<StateContext> = (
   context.searchTimelineObserver.disconnect();
 
   // Remove download panel from DOM
-  const panel = document.getElementById("keeb-pd-download-panel");
+  const panel = document.getElementById(PANEL_ID);
   if (panel) panel.remove();
 
   // Clear counter update intervals

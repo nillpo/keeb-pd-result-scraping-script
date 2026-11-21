@@ -68,7 +68,7 @@ Tweetオブジェクト
 
 **手動クリア**:
 
-- フローティングパネルの「Clear All」ボタンをクリック
+- フローティングパネルの「クリア」ボタンを2回押す（1回目で確認表示、3秒以内に2回目）
 
 この設計により、異なるラウンドや検索条件のツイートが混在することを防ぎつつ、検索ページと投稿ページ間のワークフロー（リツイートボタンで選択→投稿ページで祝福メッセージをコピー）はスムーズに利用できます。
 
@@ -108,7 +108,7 @@ Collected: /username/status/123 (Total: 5)
 
 ### ダウンロード手順
 
-1. フローティングパネルの「Download JSON」ボタンをクリック
+1. フローティングパネルの「ダウンロード」ボタンをクリック
 2. ブラウザのダウンロードフォルダに自動保存される
 3. ファイル名にはタイムスタンプが含まれる
 
@@ -229,161 +229,100 @@ for tweet in top_10:
 
 ### 概要
 
-画面右下に常時表示される半透明のパネルで、収集状況の確認とデータ操作ができます。
+画面右下に表示される、Mac のすりガラス風のパネルで、収集状況の確認とデータ操作ができます。ライト/ダークは Twitter/X のテーマに自動で追従します。
 
 ### パネルの位置
 
-- **位置**: 画面右下
+- **位置**: 画面右下（右16px、下16px）
+- **幅**: 264px
 - **固定**: スクロールしても追従
 - **z-index**: 9999（他の要素より前面に表示）
 
 ### パネルの構成
 
-#### 1. カウンターバッジ
+```
+┌──────────────────────────────┐
+│ 🐾 KEEB_PD            12件  ⌄ │  ← ヘッダー（クリックで折りたたみ）
+├──────────────────────────────┤
+│ ふぁぼ数 Top 5                │
+│  1  ユーザーA          ♥ 120  │
+│  2  ユーザーB          ♥  98  │
+│  ...                          │
+│ [ ⬇ ダウンロード ] [ 🗑 クリア ] │
+└──────────────────────────────┘
+```
 
-**表示内容**: `{数} tweet{s} collected`
+（上の図のアイコンは、実際にはすべてSVGです）
 
-**例**:
+#### 1. ヘッダー
 
-- `0 tweet collected`
-- `1 tweet collected`
-- `5 tweets collected`
+**表示内容**: 足跡アイコン、`KEEB_PD`、収集した件数（`{数}件`）、折りたたみの矢印
+
+**動作**: ヘッダー全体がボタンで、クリックすると本体（Top 5 とボタン）を開閉します。開閉の状態は `localStorage`（`keeb-pd-panel-collapsed`）に保存され、次回も維持されます。保存できない環境では、保存しません。
 
 **更新頻度**: 1秒ごとに自動更新（setInterval）
 
-**技術的な実装**:
+#### 2. Top 5 いいね数ランキング
 
-```typescript
-const updateCounter = () => {
-  const count = context.collectedTweets.size;
-  counterBadge.textContent = `${count} tweet${
-    count !== 1 ? "s" : ""
-  } collected`;
-  // ...
-};
-setInterval(updateCounter, 1000);
-```
-
-#### 2. Top 5いいね数ランキング
-
-**表示内容**: 収集したツイートのうち、いいね数上位5件をランキング形式で表示
-
-**表示形式**:
-
-```
-1. userName ♥12345
-2. userName ♥9876
-3. userName ♥5432
-4. userName ♥3210
-5. userName ♥1987
-```
-
-`♥` はハートのアイコン（SVG。`src/icons.ts` の `heart`）です。色はいいね数と同じピンク（`rgb(249, 24, 128)`）になります。
+**表示内容**: 収集したツイートのうち、いいね数上位5件を、順位・表示名・ハートのアイコン付きのいいね数で表示
 
 **インタラクション**:
 
-- **ホバー効果**: マウスオーバーで背景色変更（`rgba(59, 130, 246, 0.1)`）
-- **クリック動作**: ツイートを新規タブで開く（`window.open(url, "_blank")`）
-- **カーソル**: ポインターカーソル表示
+- **ホバー効果**: マウスオーバーで背景色が変わる
+- **クリック動作**: ツイートを新規タブで開く（`window.open(url, "_blank", "noopener")`）
+- **URL生成パターン**: `https://x.com${tweet.url}`（`twitter.com` で開いている場合は `https://twitter.com`）
 
-**表示条件**:
+**0件のとき**: 「まだ収集されていません」を表示
 
-- **表示**: 収集ツイート数 > 0
-- **非表示**: 収集ツイート数 = 0（`display: none`）
+**ソート順**: いいね数の降順
 
-**更新頻度**: 1秒ごとに自動更新（counterBadgeと同じsetInterval）
+**ちらつき防止**: 毎秒の更新時に、上位5件（URLといいね数）が前回と同じなら、DOMを作り直しません。
 
-**ソート順**: いいね数降順（`sort((a, b) => b.fav - a.fav)`）
-
-**技術的な実装**:
-
-```typescript
-// 各アイテムは createElement で組み立てる（innerHTML は使わない）
-const rankBadge = document.createElement("span");
-rankBadge.textContent = `${rank}.`;
-
-const userName = document.createElement("span");
-userName.textContent = tweet.userName;
-
-const favCount = document.createElement("span");
-favCount.append(createIcon("heart", "0.9em"), String(tweet.fav));
-
-item.append(rankBadge, userName, favCount);
-```
-
-**実装箇所**: `src/scriptbody.ts`（`setupDownloadButton`）、アイコンは `src/icons.ts`
-
-**スタイル詳細**:
-
-- **フォント**: `14px`
-- **余白**: 各アイテム `8px`
-- **ボーダー下**: `1px solid rgba(255, 255, 255, 0.1)`（最後の要素以外）
-- **テキストカラー**: `white`
-- **ホバー背景**: `rgba(59, 130, 246, 0.1)`
-- **トランジション**: `background-color 0.2s`
-
-**URL生成パターン**: `https://x.com${tweet.url}`
+**実装箇所**: `src/panel.ts`（`createRow`、`update`）、アイコンは `src/icons.ts`
 
 #### 3. ダウンロードボタン
 
-**ラベル**: `Download JSON`（ダウンロードアイコン付き）
+**ラベル**: `ダウンロード`（ダウンロードアイコン付き。強調色の塗りつぶしボタン）
 
-**動作**:
+**動作**: クリックでJSONファイルをダウンロード（[JSONダウンロード機能](#jsonダウンロード機能)を参照）
 
-- クリック → JSONファイルをダウンロード
-
-**状態管理**:
-
-- **有効**: 1件以上のツイートが収集されている
-- **無効**: 0件の場合（`opacity: 0.5`、`cursor: not-allowed`）
-
-**ビジュアル**:
-
-- 有効時: 白背景、青文字、ポインターカーソル
-- 無効時: 半透明、クリック不可カーソル
+**状態管理**: 0件のときは無効（薄く表示され、クリックできない）
 
 #### 4. クリアボタン
 
-**ラベル**: `Clear All`（ゴミ箱アイコン付き）
+**ラベル**: `クリア`（ゴミ箱アイコン付き）
 
-**動作**:
+**動作**: 確認ダイアログの代わりに、**2回押して削除**します。
 
-1. クリック → 確認ダイアログ表示
-2. ユーザーが「OK」 → `collectedTweets.clear()` 実行
-3. カウンターが0にリセット
+1. 1回目のクリック → ボタンが赤くなり、`もう一度押して削除` と表示
+2. 3秒以内に2回目のクリック → `collectedTweets.clear()` を実行し、件数が0に戻る
+3. 3秒以内に押さなかった場合、元の表示に戻る（削除されない）
 
-**確認ダイアログのメッセージ**:
+**状態管理**: 0件のときは無効
 
-```
-Clear {数} collected tweets?
-```
+### パネルの構成要素と実装
 
-**技術的な実装**:
-
-```typescript
-clearButton.addEventListener("click", () => {
-  if (confirm(`Clear ${context.collectedTweets.size} collected tweets?`)) {
-    context.collectedTweets.clear();
-    updateCounter();
-    console.log("Cleared all collected tweets");
-  }
-});
-```
+| ファイル              | 役割                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `src/panel.ts`        | パネルのDOMを組み立てる（`createPanel`）。`update(tweets)` で表示を更新する                                  |
+| `src/panel-styles.ts` | パネルのCSS。ホバーやフォーカスなどの擬似クラスが必要なため、インラインstyleではなくスタイルシートで定義する |
+| `src/icons.ts`        | ヘッダー、ボタン、ハートのアイコン（インラインSVG）                                                          |
+| `src/scriptbody.ts`   | `setupDownloadButton` でパネルを作成し、1秒ごとに `update` を呼ぶ。ダウンロード処理もここ                    |
 
 ### パネルのスタイル
 
 **外観**:
 
-- 背景: 半透明の青（`rgba(29, 155, 240, 0.9)`）
-- パディング: 12px
-- ボーダー半径: 16px（丸角）
-- ボックスシャドウ: `0 4px 12px rgba(0, 0, 0, 0.3)`
+- 背景: 半透明＋背景のぼかし（`backdrop-filter: blur(24px) saturate(180%)`）。非対応のブラウザでは、ほぼ不透明の背景にフォールバック
+- 枠: 細い境界線（`0.5px`）、角丸 `14px`、影
+- フォント: システムフォント（`-apple-system`、ヒラギノ、`system-ui` など）。`13px`
+- 色: パネル要素の `data-theme`（`light` / `dark`）で、CSS変数を切り替える
 
-**レイアウト**:
+**テーマの判定**: OSの設定ではなく、ページの `body` の背景色から判定します（Twitter/X のライト、Dim、ライツアウトは、OSの設定とは別のため）。背景色の明るさが半分未満ならダーク、判定できない場合はOSの `prefers-color-scheme` に従います。1秒ごとの更新時に再判定するので、Twitter/X側でテーマを切り替えても追従します。
 
-- `display: flex`
-- `flex-direction: column`（縦並び）
-- `gap: 8px`（要素間のスペース）
+**スタイルの追加方法**: `CSSStyleSheet` を `document.adoptedStyleSheets` に追加します。ページのCSP（`style-src`）の影響を受けないためです。使えない環境では `<style>` 要素にフォールバックします。
+
+**操作の状態**: ホバー、押下、キーボードフォーカス（`:focus-visible`）、無効時の見た目を用意しています。`prefers-reduced-motion` ではアニメーションを無効にします。
 
 ### パネルの表示タイミング
 
@@ -572,15 +511,15 @@ const isKEEBPDSearchURL = (url: URL) => {
 6. タイムライン検出（SEARCH_PAGE_LOADED）
    ↓
 7. フローティングパネル表示
-   カウンター: "0 tweet collected"
+   カウンター: "0件"
    ↓
 8. ページに既に表示されているツイートを自動収集
-   カウンター: "5 tweets collected"
+   カウンター: "5件"
    ↓
 9. ユーザーがスクロール → 新しいツイート表示
    ↓
 10. 新しいツイートを自動収集
-    カウンター: "15 tweets collected"
+    カウンター: "15件"
     ↓
 11. ユーザーがダウンロードボタンをクリック
     ↓
@@ -628,30 +567,30 @@ const isKEEBPDSearchURL = (url: URL) => {
 
 ```
 1. ユーザーがKEEB_PD検索ページでツイート収集中
-   カウンター: "50 tweets collected"
+   カウンター: "50件"
    ↓
-2. ユーザーがクリアボタン（Clear All）をクリック
+2. ユーザーがクリアボタンをクリック（1回目）
    ↓
-3. 確認ダイアログ表示
-   メッセージ: "Clear 50 collected tweets?"
+3. ボタンが赤くなり、確認表示になる
+   表示: "もう一度押して削除"（3秒間）
    ↓
-4. ユーザーが「OK」をクリック
+4. 3秒以内にもう一度クリック（2回目）
    ↓
 5. 収集データがクリアされる
    内部状態: context.collectedTweets.clear()
    ↓
 6. カウンターがリセット
-   カウンター: "0 tweet collected"
+   カウンター: "0件"
    ↓
-7. ダウンロードボタンが無効化される
-   ボタン: opacity 0.5, cursor not-allowed
+7. ダウンロードボタンとクリアボタンが無効化される
+   （2回目を押さずに3秒たつと、元の表示に戻り、削除されない）
 ```
 
 #### 自動クリア（ページ遷移時）
 
 ```
 1. ユーザーがKEEB_PD検索ページ（R1）でツイート収集中
-   カウンター: "30 tweets collected"
+   カウンター: "30件"
    ↓
 2. ユーザーがホームタイムラインに移動
    ↓
@@ -665,7 +604,7 @@ const isKEEBPDSearchURL = (url: URL) => {
 6. ユーザーが別のKEEB_PD検索ページ（R2）に移動
    ↓
 7. カウンターは0からスタート
-   カウンター: "0 tweet collected"
+   カウンター: "0件"
    ↓
 8. R2のツイートを新規収集開始
 ```

@@ -410,9 +410,12 @@ observer.observe(document, {
 
 **パネル構成**:
 
-- カウンターバッジ: `context.collectedTweets.size` をリアルタイム表示
+- ヘッダー: 件数（`context.collectedTweets.size`）をリアルタイム表示。クリックで折りたたみ
+- Top 5 ランキング: いいね数の上位5件
 - ダウンロードボタン: JSON生成 → Blob → ダウンロード
-- クリアボタン: `confirm()` 確認後、`collectedTweets.clear()`
+- クリアボタン: 2回押して `collectedTweets.clear()`（確認ダイアログは使わない）
+
+パネルのDOMは `src/panel.ts`（`createPanel`）、CSSは `src/panel-styles.ts`、アイコンは `src/icons.ts` にあり、`setupDownloadButton` が1秒ごとに `update` を呼びます。
 
 **5. `setupComposePage`**
 
@@ -547,8 +550,8 @@ collectedTweets: Map<string, Tweet>;
    - 実装: scriptbody.ts:542-558
 
 3. **ユーザー操作**（手動）:
-   - トリガー: フローティングパネルの「Clear All」ボタンをクリック
-   - 確認: `confirm()` ダイアログで確認
+   - トリガー: フローティングパネルの「クリア」ボタンを2回押す（1回目で確認表示、3秒以内に2回目）
+   - 確認: ボタンの表示が「もう一度押して削除」に変わる（`confirm()` は使わない）
    - 処理: `context.collectedTweets.clear()`
 
 **設計理念**:
