@@ -142,8 +142,11 @@ const css = `
 #${PANEL_ID} .kp-btn--primary { color: #fff; background: var(--kp-accent); }
 #${PANEL_ID} .kp-btn--primary:hover { background: var(--kp-accent); filter: brightness(1.08); }
 #${PANEL_ID} .kp-btn--primary:active { filter: brightness(0.92); }
+#${PANEL_ID} .kp-actions--confirming .kp-btn--primary { display: none; }
 #${PANEL_ID} .kp-btn--confirm { color: #fff; background: var(--kp-danger); }
 #${PANEL_ID} .kp-btn--confirm:hover { background: var(--kp-danger); filter: brightness(1.08); }
+/* ボタンが狭いときは、文字を途中で切らずに省略記号にする */
+#${PANEL_ID} .kp-btn > span { overflow: hidden; text-overflow: ellipsis; }
 #${PANEL_ID} .kp-btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
 
 #${PANEL_ID} button:focus-visible { outline: 2px solid var(--kp-accent); outline-offset: 2px; }

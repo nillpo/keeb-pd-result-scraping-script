@@ -143,12 +143,15 @@ export function createPanel(actions: PanelActions): Panel {
     if (confirmTimer !== undefined) clearTimeout(confirmTimer);
     confirmTimer = undefined;
     clearButton.classList.remove("kp-btn--confirm");
+    actionsRow.classList.remove("kp-actions--confirming");
     setButtonContent(clearButton, "trash", "クリア");
   };
   resetClear();
   clearButton.addEventListener("click", () => {
     if (confirmTimer === undefined) {
       clearButton.classList.add("kp-btn--confirm");
+      // 長い文言が見切れないよう、確認中はクリアボタンを全幅にする
+      actionsRow.classList.add("kp-actions--confirming");
       setButtonContent(clearButton, "trash", "もう一度押して削除");
       confirmTimer = window.setTimeout(resetClear, CLEAR_CONFIRM_MS);
       return;
