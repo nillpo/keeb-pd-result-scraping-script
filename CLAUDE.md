@@ -29,6 +29,8 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 │   ├── tweet-parser.ts     # ツイートDOM解析とフィルタリングユーティリティ
 │   ├── tweet-export.ts     # ダウンロードするJSONの形式（メタ情報の付与）
 │   ├── icons.ts            # UIアイコン（インラインSVG。currentColorで色が決まる）
+│   ├── panel.ts            # フローティングパネルのDOM（createPanel）
+│   ├── panel-styles.ts     # フローティングパネルのCSS（ライト/ダーク対応）
 │   └── metablock.ts        # ユーザースクリプトメタデータヘッダー
 ├── builder.ts              # Rolldown設定とビルドスクリプト
 ├── package.json            # 依存関係とscripts
@@ -110,14 +112,14 @@ MutationObserverの設定と遷移ハンドラーの定義。
 
 - **ツイート自動収集**: `collectedTweets: Map<string, Tweet>()`
   で重複排除し、自動収集
-- **フローティングパネル**:
-  - カウンター表示
+- **フローティングパネル**（`src/panel.ts`、`src/panel-styles.ts`）:
+  - ヘッダー（件数表示、クリックで折りたたみ）
   - **Top 5いいね数ランキング**:
     収集ツイート上位5件を表示（クリックで新規タブで開く）
   - JSONダウンロードボタン
-  - クリアボタン
+  - クリアボタン（2回押して削除。確認ダイアログは使わない）
 
-  画面右下に表示
+  画面右下に表示。Mac のすりガラス風で、Twitter/X のテーマ（ライト/ダーク）に追従する
 
 - **JSONダウンロード**:
   タイムスタンプ付きファイル名（例：`keeb-pd-tweets-2026-02-15T14-30-45.json`）

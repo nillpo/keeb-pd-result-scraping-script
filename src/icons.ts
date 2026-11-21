@@ -51,6 +51,11 @@ const definitions = {
       { tag: "path", attrs: { d: "M10.2 11v6M13.8 11v6" } },
     ],
   },
+  // chevron.down
+  chevron: {
+    attrs: outline,
+    shapes: [{ tag: "path", attrs: { d: "M6 9.5l6 6 6-6" } }],
+  },
   // heart.fill
   heart: {
     attrs: solid,
