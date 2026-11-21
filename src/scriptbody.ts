@@ -9,7 +9,8 @@ import {
 } from "./tweet-parser.ts";
 import { createIcon } from "./icons.ts";
 import { createPanel, PANEL_ID } from "./panel.ts";
-import { createTweetExport } from "./tweet-export.ts";
+import { createDownloadFileName, createTweetExport } from "./tweet-export.ts";
+import { COMPOSE_POST_PATH, isKEEBPDSearchURL } from "./url.ts";
 
 type StateContext = {
   searchTimelineObserver: MutationObserver;
@@ -17,21 +18,6 @@ type StateContext = {
   listeners: number[];
   tweet: Tweet;
   collectedTweets: Map<string, Tweet>;
-};
-
-const COMPOSE_POST_PATH = "/compose/post";
-
-const isKEEBPDSearchURL = (url: URL) => {
-  const query = url.searchParams.get("q");
-  if (
-    url.pathname === "/search" &&
-    url.searchParams.get("f") === "live" &&
-    query &&
-    query.match(/KEEB_PD_R\d+/g)
-  ) {
-    return true;
-  }
-  return false;
 };
 
 const observeTwitterPage: ExecuteHandler<StateContext> = (_event, context) => {
@@ -96,8 +82,7 @@ const downloadTweets = (tweets: Tweet[]): void => {
 
   const a = document.createElement("a");
   a.href = url;
-  const timestamp = now.toISOString().replace(/[:.]/g, "-");
-  a.download = `keeb-pd-tweets-${timestamp}.json`;
+  a.download = createDownloadFileName(now);
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
