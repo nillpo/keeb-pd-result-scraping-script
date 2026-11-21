@@ -332,6 +332,8 @@ pnpm fmt:check   # 整形済みかの確認のみ
 
 バンドラーは型チェックを行わないため、コミット前に `pnpm typecheck` を実行してください。
 
+GitHub Actions（`.github/workflows/ci.yml`）が、プルリクエストと`main`へのpushで `pnpm fmt:check` / `pnpm lint` / `pnpm typecheck` / `pnpm build` を自動実行します。ワークフロー内のアクションはコミットSHAで固定しています。
+
 ### ビルドプロセス詳細
 
 `builder.ts` が実行する処理（順番に）:
