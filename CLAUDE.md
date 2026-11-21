@@ -11,9 +11,11 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 
 ## 技術スタック
 
-- **ランタイム**: Deno（最新版）
+- **ランタイム**: Node.js 26以降（LTS）
+- **パッケージマネージャー**: pnpm（`packageManager`で固定）
 - **言語**: TypeScript（strict typing、`any`禁止）
-- **バンドラー**: esbuild + @deno/esbuild-plugin（Deno公式プラグイン）
+- **バンドラー**: Rolldown
+- **リンター / フォーマッター**: oxlint / oxfmt（型チェックは `tsc`）
 - **出力**:
   Tampermonkey/Violentmonkey/Greasemonkey互換のユーザースクリプト（.js）
 
@@ -26,9 +28,13 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 │   ├── state-machine.ts    # 汎用状態機械実装（6状態、8イベントタイプ）
 │   ├── tweet-parser.ts     # ツイートDOM解析とフィルタリングユーティリティ
 │   └── metablock.ts        # ユーザースクリプトメタデータヘッダー
-├── builder.ts              # esbuild設定とビルドスクリプト
-├── deno.jsonc              # Deno設定（タスクとimportsマップ）
-├── deno.lock               # Deno依存関係ロックファイル
+├── builder.ts              # Rolldown設定とビルドスクリプト
+├── package.json            # 依存関係とscripts
+├── pnpm-lock.yaml          # 依存関係ロックファイル
+├── pnpm-workspace.yaml     # pnpm設定（minimumReleaseAge等）
+├── tsconfig.json           # src/（ブラウザ向け）の型チェック設定
+├── tsconfig.node.json      # builder.ts（Node向け）の型チェック設定
+├── .oxlintrc.json          # oxlint設定
 └── out/                    # ビルド出力ディレクトリ（.gitignore）
     └── script.js           # 最終バンドル済みユーザースクリプト
 ```
@@ -115,12 +121,12 @@ MutationObserverの設定と遷移ハンドラーの定義。
 
 ### ブラウザAPI制限
 
-ユーザースクリプトはブラウザコンテキストで実行されるため、**Deno
+ユーザースクリプトはブラウザコンテキストで実行されるため、`src/`では**Node.js
 APIは使用不可**です。
 
 **使用可能**: `MutationObserver`、`document`、`window`、`navigator.clipboard`
-等のブラウザAPI **使用禁止**: `Deno.readTextFile` 等のDeno専用API、Node.js
-API（ポリフィルなし）
+等のブラウザAPI **使用禁止**: `node:fs` 等のNode.js
+API（ポリフィルなし）。Node.js APIは`builder.ts`でのみ使用できます
 
 ### ロケール依存
 
@@ -129,8 +135,8 @@ API（ポリフィルなし）
 **重要なセレクタ**:
 
 - タイムライン: `div[aria-label="タイムライン: タイムラインを検索"]`
-  (scriptbody.ts:204)
-- プロモーションテキスト: `"プロモーション"` (tweet-parser.ts:31)
+  (scriptbody.ts:322)
+- プロモーションテキスト: `"プロモーション"` (tweet-parser.ts:30)
 
 ### Twitter DOM依存
 
@@ -170,30 +176,41 @@ Twitter/XはDOM構造を頻繁に変更します。セレクタが動作しな�
   - `tryDispatch`: オプショナル遷移（失敗時は何もしない）
   - `dispatch`: 期待される遷移（失敗時はログ出力）
 
-### Deno規約
+### Node.js / pnpm規約
 
-- **JSRインポート**: Denoモジュール用（例：`jsr:@deno/esbuild-plugin@^1.2.1`）
-- **npmインポート**: Nodeパッケージ用（例：`npm:esbuild@^0.27.3`）
-- **imports map必須**: 全インポートを`deno.jsonc`の`imports`に記載
-- **deno.lock使用**: 再現可能ビルドのため
+- **依存の固定**: `pnpm add -D --save-exact <pkg>`で追加し、`package.json`にバージョンを固定
+- **pnpm-lock.yaml使用**: 再現可能ビルドのためコミットし、`pnpm install --frozen-lockfile`で導入
+- **公開7日ルール**: `pnpm-workspace.yaml`の`minimumReleaseAge: 10080`（7日）を維持し、公開から7日未満のバージョンを導入しない。`minimumReleaseAgeExclude`での例外指定は原則禁止
+- **ビルドスクリプト許可制**: 依存のビルドスクリプトは`allowBuilds`で明示的に許可したものだけ実行
+- **node:プレフィックス**: Node.js組み込みモジュールは`node:`付きでインポート（`builder.ts`のみ）
+- **型チェック必須**: バンドラーは型チェックしないため、`pnpm typecheck`を実行する
+- **ツールチェーン**: リント`pnpm lint`（oxlint）、整形`pnpm fmt`（oxfmt）
 
 ## ビルドとデバッグ
 
 ### ビルドコマンド
 
 ```bash
+# 依存関係のインストール
+pnpm install --frozen-lockfile
+
 # 開発ビルド（ファイル監視）
-deno task dev
+pnpm dev
 
 # 本番ビルド（単発実行）
-deno task build
+pnpm build
+
+# 検証
+pnpm typecheck   # tsc
+pnpm lint        # oxlint
+pnpm fmt:check   # oxfmt（整形は pnpm fmt）
 ```
 
 **ビルドプロセス**:
 
-1. `src/scriptbody.ts` をesbuildでバンドル
+1. `src/scriptbody.ts` をRolldownでバンドル
 2. `src/metablock.ts` のメタデータを先頭に追加
-3. `deno fmt` でフォーマット
+3. `oxfmt`（stdin経由）でフォーマット
 4. `out/script.js` に出力
 
 ### デバッグ方法
@@ -209,7 +226,7 @@ deno task build
 
 **ローカルテスト手順**:
 
-1. `deno task dev` でビルド監視開始
+1. `pnpm dev` でビルド監視開始
 2. コード変更後、`out/script.js` をコピー
 3. Tampermonkeyダッシュボードでスクリプトを編集・貼り付け
 4. Twitter/Xページを再読み込み
@@ -221,7 +238,7 @@ deno task build
 - **[docs/architecture.md](docs/architecture.md)**:
   アーキテクチャ詳細、設計決定の理由、データフロー
 - **[docs/development.md](docs/development.md)**:
-  開発環境セットアップ（ローカルDeno、DevContainer、Docker Compose）
+  開発環境セットアップ（ローカルNode.js + pnpm、DevContainer、Docker Compose）
 - **[docs/coding-guidelines.md](docs/coding-guidelines.md)**:
   コーディング規約、DOM操作パターン、パフォーマンス最適化
 - **[docs/features.md](docs/features.md)**: 機能詳細と使用方法
@@ -231,13 +248,14 @@ deno task build
 ### ツイートが検出されない
 
 1. URLパターン確認（`isKEEBPDSearchURL` の条件、scriptbody.ts:21）
-2. タイムラインセレクタ確認（scriptbody.ts:204）
+2. タイムラインセレクタ確認（scriptbody.ts:322）
 3. DevToolsでツイートDOM構造を確認し、`tweet-parser.ts` のセレクタを更新
 
 ### ビルドエラー
 
-- `deno cache --reload builder.ts` で依存関係を再キャッシュ
-- `out/` ディレクトリをクリアして再ビルド
+- `pnpm install --frozen-lockfile` で依存関係を再インストール
+- `pnpm build` 経由で実行する（`oxfmt` が `node_modules/.bin` にあるため）
+- `ERR_PNPM_NO_MATURE_MATCHING_VERSION` は公開7日未満のバージョンしか無い場合に出る。7日待つか古い版を指定する
 - 循環インポートや型エラーを確認
 
 ### パフォーマンス低下
