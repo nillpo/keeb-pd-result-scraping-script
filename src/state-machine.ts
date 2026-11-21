@@ -28,41 +28,18 @@ type StateEventType =
   | "UPDATE_TWEET_CONTEXT"
   | "COLLECT_TWEET";
 
-type StateEventPayload<
-  E extends StateEventType,
-  T = Record<PropertyKey, unknown>,
-> = {
+type StateEventPayload<E extends StateEventType, T = Record<PropertyKey, unknown>> = {
   type: E;
 } & T;
 
-type BeginObservingEvent = StateEventPayload<
-  "BEGIN_OBSERVING"
->;
-type DetectSearchUrlEvent = StateEventPayload<
-  "DETECT_SEARCH_URL",
-  { url: string }
->;
-type DetectComposeUrlEvent = StateEventPayload<
-  "DETECT_COMPOSE_URL",
-  { url: string }
->;
-type SearchPageLoadedEvent = StateEventPayload<
-  "SEARCH_PAGE_LOADED",
-  { css_selector: string }
->;
-type ComposePageLoadedEvent = StateEventPayload<
-  "COMPOSE_PAGE_LOADED",
-  { css_selector: string }
->;
+type BeginObservingEvent = StateEventPayload<"BEGIN_OBSERVING">;
+type DetectSearchUrlEvent = StateEventPayload<"DETECT_SEARCH_URL", { url: string }>;
+type DetectComposeUrlEvent = StateEventPayload<"DETECT_COMPOSE_URL", { url: string }>;
+type SearchPageLoadedEvent = StateEventPayload<"SEARCH_PAGE_LOADED", { css_selector: string }>;
+type ComposePageLoadedEvent = StateEventPayload<"COMPOSE_PAGE_LOADED", { css_selector: string }>;
 type PageChangedEvent = StateEventPayload<"PAGE_CHANGED", { url: string }>;
-type UpdateTweetContextEvent = StateEventPayload<
-  "UPDATE_TWEET_CONTEXT",
-  { tweet: Tweet }
->;
-type CollectTweetEvent = StateEventPayload<
-  "COLLECT_TWEET",
-  { tweet: Tweet }
->;
+type UpdateTweetContextEvent = StateEventPayload<"UPDATE_TWEET_CONTEXT", { tweet: Tweet }>;
+type CollectTweetEvent = StateEventPayload<"COLLECT_TWEET", { tweet: Tweet }>;
 
 type StateEvents =
   | DetectComposeUrlEvent
@@ -171,21 +148,17 @@ export class StateMachine<StateContext extends Record<string, unknown>> {
       this.notifyListeners({
         event,
         from: prevState,
-        reason:
-          `No transition found for event ${event.type} in state ${this.currentState}`,
+        reason: `No transition found for event ${event.type} in state ${this.currentState}`,
         success: false,
       });
       return false;
     }
 
-    if (
-      matchedTransition.condition && !matchedTransition.condition(event)
-    ) {
+    if (matchedTransition.condition && !matchedTransition.condition(event)) {
       this.notifyListeners({
         event,
         from: prevState,
-        reason:
-          `Action for event ${event.type} in state ${this.currentState} failed`,
+        reason: `Action for event ${event.type} in state ${this.currentState} failed`,
         success: false,
       });
       return false;
@@ -218,8 +191,6 @@ export class StateMachine<StateContext extends Record<string, unknown>> {
   }
 
   public canHandle(eventType: StateEventType): boolean {
-    return this.transitions.some((t) =>
-      t.from === this.currentState && t.event === eventType
-    );
+    return this.transitions.some((t) => t.from === this.currentState && t.event === eventType);
   }
 }

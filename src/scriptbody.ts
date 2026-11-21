@@ -38,20 +38,14 @@ const observeTwitterPage: ExecuteHandler<StateContext> = (_event, context) => {
   });
 };
 
-const observeSearchTimeline: ExecuteHandler<StateContext> = (
-  _event,
-  context,
-) => {
+const observeSearchTimeline: ExecuteHandler<StateContext> = (_event, context) => {
   context.searchTimelineObserver.observe(document, {
     subtree: true,
     childList: true,
   });
 };
 
-const disconnectSearchTimeline: ExecuteHandler<StateContext> = (
-  _event,
-  context,
-) => {
+const disconnectSearchTimeline: ExecuteHandler<StateContext> = (_event, context) => {
   context.searchTimelineObserver.disconnect();
 
   // Remove download panel from DOM
@@ -74,9 +68,10 @@ const setupComposePage: ExecuteHandler<StateContext> = (event, context) => {
   div.addEventListener("click", (target) => {
     const currentTarget = target.currentTarget;
     if (currentTarget instanceof HTMLDivElement) {
-      navigator.clipboard.writeText(text).then(() =>
-        console.log("Text copied!")
-      ).catch((err) => console.error("Clipboard write failed", err));
+      navigator.clipboard
+        .writeText(text)
+        .then(() => console.log("Text copied!"))
+        .catch((err) => console.error("Clipboard write failed", err));
     }
   });
 
@@ -91,9 +86,7 @@ const setupComposePage: ExecuteHandler<StateContext> = (event, context) => {
 };
 
 const getTop5Tweets = (tweets: Map<string, Tweet>): Tweet[] => {
-  const sortedTweets = Array.from(tweets.values()).sort((a, b) =>
-    b.fav - a.fav
-  );
+  const sortedTweets = Array.from(tweets.values()).sort((a, b) => b.fav - a.fav);
   return sortedTweets.slice(0, 5);
 };
 
@@ -243,9 +236,8 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
 
     // Click handler: Open tweet in new tab
     item.addEventListener("click", () => {
-      const baseUrl = globalThis.location.hostname === "x.com"
-        ? "https://x.com"
-        : "https://twitter.com";
+      const baseUrl =
+        globalThis.location.hostname === "x.com" ? "https://x.com" : "https://twitter.com";
       const fullUrl = `${baseUrl}${tweet.url}`;
       globalThis.open(fullUrl, "_blank");
       console.log(`Opened tweet in new tab: ${fullUrl}`);
@@ -257,9 +249,7 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
   // Update counter display
   const updateCounter = () => {
     const count = context.collectedTweets.size;
-    counterBadge.textContent = `${count} tweet${
-      count !== 1 ? "s" : ""
-    } collected`;
+    counterBadge.textContent = `${count} tweet${count !== 1 ? "s" : ""} collected`;
     downloadButton.disabled = count === 0;
     downloadButton.style.opacity = count === 0 ? "0.5" : "1";
     downloadButton.style.cursor = count === 0 ? "not-allowed" : "pointer";
@@ -361,38 +351,38 @@ const twitterPageObserver = new MutationObserver(() => {
 });
 
 const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
-  const validNodes = mutations
-    .reduce((accumulatedNodes, mutation) => {
-      const { addedNodes } = mutation;
-      const filteredNodes = Array.from(addedNodes).filter((node) => {
+  const validNodes = mutations.reduce((accumulatedNodes, mutation) => {
+    const { addedNodes } = mutation;
+    const filteredNodes = Array.from(addedNodes)
+      .filter((node) => {
         if (isPromotionTweet(node) || isQuoteRetweet(node)) {
           return false;
         }
         if (!(node instanceof Element)) return false;
         if (node.getAttribute("data-testid") !== "cellInnerDiv") return false;
         return true;
-      }).reduce((elements, node) => {
+      })
+      .reduce((elements, node) => {
         if (node instanceof Element) {
           return [...elements, node];
         }
         return elements;
       }, [] as Element[]);
 
-      return [...accumulatedNodes, ...filteredNodes];
-    }, [] as Element[]);
+    return [...accumulatedNodes, ...filteredNodes];
+  }, [] as Element[]);
 
   console.log("Filtered nodes:", validNodes);
 
   validNodes.forEach((node) => {
-    const retweetButton = node.querySelector(`button[data-testid="retweet"]`) ??
+    const retweetButton =
+      node.querySelector(`button[data-testid="retweet"]`) ??
       node.querySelector(`button[data-testid="unretweet"]`);
     const tweetData = parseEntryTweet(node);
 
     console.log(
       "TWEET PARSE",
-      tweetData.isEntryTweet
-        ? JSON.stringify(tweetData.tweet)
-        : tweetData.reason,
+      tweetData.isEntryTweet ? JSON.stringify(tweetData.tweet) : tweetData.reason,
     );
 
     // Auto-collect valid tweets
@@ -434,9 +424,7 @@ stateMachine.addListener((result) => {
   if (result.success) {
     console.log(`Transitioned from ${result.from} to ${result.to}`);
   } else {
-    console.log(
-      `Failed to transition from ${result.from} due to ${result.reason}`,
-    );
+    console.log(`Failed to transition from ${result.from} due to ${result.reason}`);
   }
 });
 const transitions: Transition<StateContext>[] = [
@@ -486,9 +474,7 @@ const transitions: Transition<StateContext>[] = [
     execute: (event, context) => {
       if (event.type !== "COLLECT_TWEET") return;
       context.collectedTweets.set(event.tweet.url, event.tweet);
-      console.log(
-        `Collected: ${event.tweet.url} (Total: ${context.collectedTweets.size})`,
-      );
+      console.log(`Collected: ${event.tweet.url} (Total: ${context.collectedTweets.size})`);
     },
   },
   {
@@ -523,9 +509,7 @@ const transitions: Transition<StateContext>[] = [
     to: "MONITORING_COMPOSE_PAGE",
     condition: (event) => {
       if (event.type !== "COMPOSE_PAGE_LOADED") return false;
-      const composeButton = document.querySelector(
-        event.css_selector,
-      );
+      const composeButton = document.querySelector(event.css_selector);
       return !!composeButton;
     },
     execute: setupComposePage,
