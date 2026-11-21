@@ -1,0 +1,10 @@
+# 公開から7日(10080分)未満のバージョンは解決対象から除外する（サプライチェーン対策）
+minimumReleaseAge: 10080
+# 条件を満たすバージョンが無い場合は古い版へフォールバックせず失敗させる
+minimumReleaseAgeStrict: true
+# 公開日時が取得できないパッケージも通さない
+minimumReleaseAgeIgnoreMissingTime: false
+
+# 依存パッケージのビルドスクリプトは明示的に許可したものだけ実行する
+strictDepBuilds: true
+allowBuilds: {}
