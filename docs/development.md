@@ -50,6 +50,7 @@ pnpm --version   # 12.21.0
 
 2. **プロジェクト設定**: このプロジェクトには `.vscode/settings.json`
    が含まれており、以下が自動的に有効になります：
+
    ```json
    {
      "editor.defaultFormatter": "oxc.oxc-vscode",
@@ -83,12 +84,14 @@ Containers拡張機能を使用し、Docker内で開発します。環境構築�
 #### セットアップ手順
 
 1. **リポジトリをクローン**:
+
    ```bash
    git clone https://github.com/nillpo/keeb-pd-scraper.git
    cd keeb-pd-scraper
    ```
 
 2. **VS Codeで開く**:
+
    ```bash
    code .
    ```
@@ -151,26 +154,31 @@ Code機能を使用する場合に便利です。
 #### セットアップ手順
 
 1. **環境変数設定**（オプション、Claude Code使用時）:
+
    ```bash
    export ANTHROPIC_API_KEY="sk-ant-..."
    ```
 
    または `.env` ファイルを作成:
+
    ```bash
    echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
    ```
 
 2. **コンテナ起動**:
+
    ```bash
    docker-compose up -d
    ```
 
 3. **コンテナに接続**:
+
    ```bash
    docker-compose exec claude-code /bin/bash
    ```
 
 4. **開発開始**:
+
    ```bash
    pnpm install --frozen-lockfile && pnpm dev
    ```
@@ -386,6 +394,7 @@ pnpm fmt:check   # 整形済みかの確認のみ
 ### ステップ2: Twitter/Xで動作確認
 
 1. **検索ページを開く**:
+
    ```
    https://twitter.com/search?f=live&q=%23KEEB_PD_R1%20min_faves%3A10
    ```
@@ -399,6 +408,7 @@ pnpm fmt:check   # 整形済みかの確認のみ
    - "Console" タブを選択
 
 4. **ログを確認**:
+
    ```
    Transitioned from INITIAL to OBSERVING_TWITTER_PAGE
    Transitioned from OBSERVING_TWITTER_PAGE to LOADING_SEARCH_PAGE
@@ -560,12 +570,15 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
 **デバッグ手順**:
 
 1. コンソールで状態確認:
+
    ```
    Transitioned from LOADING_SEARCH_PAGE to MONITORING_SEARCH_PAGE
    ```
+
    このログがあるか確認
 
 2. タイムライン要素の確認:
+
    ```javascript
    document.querySelector('div[aria-label="タイムライン: タイムラインを検索"]');
    // null でない場合は要素が存在
@@ -582,15 +595,18 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
 **デバッグ手順**:
 
 1. URLパターン確認:
+
    ```javascript
    isKEEBPDSearchURL(new URL(document.location.href));
    // true であるべき
    ```
 
 2. フィルタリングログ確認:
+
    ```
    Filtered nodes: []
    ```
+
    空配列の場合、ツイートが検出されていない
 
 3. ツイートノード確認:

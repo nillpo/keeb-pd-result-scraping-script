@@ -36,6 +36,7 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 ├── tsconfig.app.json       # src/（ブラウザ向け）の型チェック設定
 ├── tsconfig.node.json      # builder.ts（Node向け）の型チェック設定
 ├── .oxlintrc.json          # oxlint設定
+├── .oxfmtrc.json           # oxfmt設定（プロジェクト全体を整形）
 └── out/                    # ビルド出力ディレクトリ（.gitignore）
     └── script.js           # 最終バンドル済みユーザースクリプト
 ```
@@ -115,6 +116,7 @@ MutationObserverの設定と遷移ハンドラーの定義。
   - クリアボタン
 
   画面右下に表示
+
 - **JSONダウンロード**:
   タイムスタンプ付きファイル名（例：`keeb-pd-tweets-2026-02-15T14-30-45.json`）
 
