@@ -628,11 +628,11 @@ KEEB_PD検索ページ (R1)
 **ランタイム依存**:
 
 - **なし**:
-  最終的なユーザースクリプト（`out/script.js`）は全て静的にバンドルされ、外部依存なし
+  最終的なユーザースクリプト（`out/keeb-pd-result-scraper.user.js`）は全て静的にバンドルされ、外部依存なし
 
 **検証方法**:
 
-- `out/script.js` を開き、`fetch`、`XMLHttpRequest`、`eval`
+- `out/keeb-pd-result-scraper.user.js` を開き、`fetch`、`XMLHttpRequest`、`eval`
   等の危険なAPIが含まれていないことを確認
 - ブラウザのDevToolsでネットワークタブを監視し、外部通信がないことを確認
 
@@ -659,7 +659,7 @@ KEEB_PD検索ページ (R1)
 
 ユーザーがスクリプトをインストールする前に、以下を確認することを推奨します：
 
-1. **`out/script.js` の確認**:
+1. **`out/keeb-pd-result-scraper.user.js` の確認**:
    - ファイルサイズが異常に大きくないか（通常は10-20KB程度）
    - 難読化されていないか（読みやすいコードであるべき）
    - 外部URLが含まれていないか（`https://` で検索）

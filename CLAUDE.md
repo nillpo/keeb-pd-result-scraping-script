@@ -38,7 +38,7 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 ├── .oxlintrc.json          # oxlint設定
 ├── .oxfmtrc.json           # oxfmt設定（プロジェクト全体を整形）
 └── out/                    # ビルド出力ディレクトリ（.gitignore）
-    └── script.js           # 最終バンドル済みユーザースクリプト
+    └── keeb-pd-result-scraper.user.js  # 最終バンドル済みユーザースクリプト
 ```
 
 ## コアコンポーネント
@@ -212,9 +212,9 @@ pnpm fmt:check   # oxfmt（整形は pnpm fmt）
 **ビルドプロセス**:
 
 1. `src/scriptbody.ts` をRolldownでバンドル
-2. `src/metablock.ts` のメタデータを先頭に追加
+2. `src/metablock.ts` のメタデータを先頭に追加（`@version` は `package.json` の version）
 3. `oxfmt`（stdin経由）でフォーマット
-4. `out/script.js` に出力
+4. `out/keeb-pd-result-scraper.user.js` に出力
 
 ### デバッグ方法
 
@@ -230,7 +230,7 @@ pnpm fmt:check   # oxfmt（整形は pnpm fmt）
 **ローカルテスト手順**:
 
 1. `pnpm dev` でビルド監視開始
-2. コード変更後、`out/script.js` をコピー
+2. コード変更後、`out/keeb-pd-result-scraper.user.js` をコピー
 3. Tampermonkeyダッシュボードでスクリプトを編集・貼り付け
 4. Twitter/Xページを再読み込み
 
