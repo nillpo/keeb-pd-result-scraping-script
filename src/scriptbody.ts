@@ -7,6 +7,7 @@ import {
   parseEntryTweet,
   Tweet,
 } from "./tweet-parser.ts";
+import { createIcon } from "./icons.ts";
 import { createTweetExport } from "./tweet-export.ts";
 
 type StateContext = {
@@ -76,13 +77,12 @@ const setupComposePage: ExecuteHandler<StateContext> = (event, context) => {
     }
   });
 
-  div.style.cssText = `height: 1.5em; width: 1.5em;
-     background-image: url("https://abs-0.twimg.com/emoji/v2/svg/1f436.svg");
-     background-size: 1.5em 1.5em;
+  div.style.cssText = `display: flex; align-items: center; justify-content: center;
+     height: 1.5em; width: 1.5em;
      padding: 0.15em;
-     background-position: center center;
-     background-repeat: no-repeat;
-     -webkit-text-fill-color: transparent;`;
+     color: rgb(29, 155, 240);
+     cursor: pointer;`;
+  div.append(createIcon("paw", "1.5em"));
   unsetButton.append(div);
 };
 
@@ -129,8 +129,12 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
 
   // Download button
   const downloadButton = document.createElement("button");
-  downloadButton.textContent = "⬇ Download JSON";
+  downloadButton.append(createIcon("download", "1.2em"), "Download JSON");
   downloadButton.style.cssText = `
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     background: white;
     color: rgb(29, 155, 240);
     border: none;
@@ -143,7 +147,7 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
 
   // Clear button
   const clearButton = document.createElement("button");
-  clearButton.textContent = "🗑 Clear All";
+  clearButton.append(createIcon("trash", "1.2em"), "Clear All");
   clearButton.style.cssText = downloadButton.style.cssText;
 
   // Top 5 Container
@@ -225,8 +229,11 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
     `;
 
     const favCount = document.createElement("span");
-    favCount.textContent = `❤${tweet.fav}`;
+    favCount.append(createIcon("heart", "0.9em"), String(tweet.fav));
     favCount.style.cssText = `
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
       font-weight: 600;
       color: rgb(249, 24, 128);
     `;

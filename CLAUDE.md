@@ -28,6 +28,7 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 │   ├── state-machine.ts    # 汎用状態機械実装（6状態、8イベントタイプ）
 │   ├── tweet-parser.ts     # ツイートDOM解析とフィルタリングユーティリティ
 │   ├── tweet-export.ts     # ダウンロードするJSONの形式（メタ情報の付与）
+│   ├── icons.ts            # UIアイコン（インラインSVG。currentColorで色が決まる）
 │   └── metablock.ts        # ユーザースクリプトメタデータヘッダー
 ├── builder.ts              # Rolldown設定とビルドスクリプト
 ├── package.json            # 依存関係とscripts
