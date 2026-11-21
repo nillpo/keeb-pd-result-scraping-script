@@ -1,11 +1,30 @@
 import { spawn } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { rolldown } from "rolldown";
-import { metablock } from "./src/metablock.ts";
+import { createMetablock } from "./src/metablock.ts";
 
+// .user.js で終わる名前にすると、スクリプトマネージャーがURLを開いたときにインストール画面を出す
+// リリース用ワークフロー（release.yml）もこの名前を参照する
+const fileName = "keeb-pd-result-scraper.user.js";
 const entry = new URL("./src/scriptbody.ts", import.meta.url);
 const outDir = new URL("./out/", import.meta.url);
-const outFile = new URL("./script.js", outDir);
+const outFile = new URL(`./${fileName}`, outDir);
+
+// @version は package.json の version と常に一致させる
+async function readVersion(): Promise<string> {
+  const pkg: unknown = JSON.parse(
+    await readFile(new URL("./package.json", import.meta.url), "utf8"),
+  );
+  if (
+    typeof pkg === "object" &&
+    pkg !== null &&
+    "version" in pkg &&
+    typeof pkg.version === "string"
+  ) {
+    return pkg.version;
+  }
+  throw new Error("package.json has no string version");
+}
 
 async function bundle(): Promise<string> {
   const build = await rolldown({
@@ -27,7 +46,7 @@ async function bundle(): Promise<string> {
 // oxfmt はstdinを受け付けるため、バンドル結果をパイプで渡して整形する
 function format(source: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn("oxfmt", ["--stdin-filepath", "script.js"], {
+    const proc = spawn("oxfmt", ["--stdin-filepath", fileName], {
       stdio: ["pipe", "pipe", "inherit"],
     });
     const chunks: Buffer[] = [];
@@ -44,7 +63,7 @@ function format(source: string): Promise<string> {
   });
 }
 
-const script = `${metablock}\n\n${await bundle()}`;
+const script = `${createMetablock(await readVersion())}\n\n${await bundle()}`;
 const formatted = await format(script);
 
 await rm(outDir, { recursive: true, force: true });

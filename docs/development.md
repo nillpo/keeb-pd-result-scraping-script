@@ -8,6 +8,7 @@ Scraperの開発環境セットアップと開発ワークフローについて�
 - [開発環境オプション](#開発環境オプション)
 - [初期セットアップ](#初期セットアップ)
 - [ビルドコマンド](#ビルドコマンド)
+- [リリース手順](#リリース手順)
 - [ローカルテスト手順](#ローカルテスト手順)
 - [デバッグ方法](#デバッグ方法)
 
@@ -292,13 +293,13 @@ pnpm dev
 
 - `src/` と `builder.ts` の変更を `node --watch` で監視
 - 変更検出時に自動的に再ビルド
-- `out/script.js` を更新
+- `out/keeb-pd-result-scraper.user.js` を更新
 
 **ログ出力**:
 
 ```
 > node --watch --watch-path=./src --watch-path=./builder.ts builder.ts
-Built /workspaces/out/script.js
+Built /workspaces/out/keeb-pd-result-scraper.user.js
 Completed running 'builder.ts'
 ```
 
@@ -313,7 +314,7 @@ pnpm build
 **動作**:
 
 - 1回だけビルドを実行
-- `out/script.js` を生成
+- `out/keeb-pd-result-scraper.user.js` を生成
 - 終了
 
 **使用タイミング**:
@@ -350,12 +351,40 @@ Dependabot（`.github/dependabot.yml`）が、npm依存とGitHub Actionsを毎�
    - バンドル済みコードの先頭に追加
 
 3. **フォーマット**:
-   - `oxfmt --stdin-filepath script.js` にstdin経由で渡し、整形結果を受け取る
+   - `oxfmt --stdin-filepath keeb-pd-result-scraper.user.js` にstdin経由で渡し、整形結果を受け取る
 
 4. **ファイル書き込み**:
-   - `out/` を作り直し、`out/script.js` に最終的なユーザースクリプトを保存
+   - `out/` を作り直し、`out/keeb-pd-result-scraper.user.js` に最終的なユーザースクリプトを保存
 
 `builder.ts` はNodeのtype strippingで直接実行されます（`node builder.ts`）。Node.js 26以降が必要です。
+
+## リリース手順
+
+タグを push すると、GitHub Actions（`.github/workflows/release.yml`）がビルドして GitHub Release に `keeb-pd-result-scraper.user.js` を添付します。スクリプトのメタデータに `@updateURL` / `@downloadURL`（最新リリースのURL）を入れているため、一度インストールすれば Tampermonkey などが自動で更新します。
+
+1. `package.json` の `version` を上げる（`@version` はここから生成されます）
+2. PR を作成して `main` にマージする
+3. `main` を最新にして、タグを打って push する
+
+   ```bash
+   git switch main && git pull
+   git tag v0.1.1   # package.json の version と一致させる
+   git push origin v0.1.1
+   ```
+
+4. Actions の `Release` ワークフローが成功し、Release が作成されたことを確認する
+
+ワークフローは次を検査し、満たさない場合は失敗します。
+
+- タグのコミットが `main` に含まれていること
+- タグ（`v0.1.1`）と `package.json` の `version`（`0.1.1`）が一致すること
+- `pnpm fmt:check` / `lint` / `typecheck` / `build` が通ること
+
+**注意**:
+
+- `@version` が上がらない限り、スクリプトマネージャーは更新を検知しません。
+- 壊れた版を出しても、Release を削除するだけでは手元のスクリプトは戻りません。より大きいバージョン（パッチ）を出し直してください。
+- ファイル名（`keeb-pd-result-scraper.user.js`）を変える場合は、`builder.ts` の `fileName`、`src/metablock.ts` のURL、`release.yml` を揃えて更新してください。
 
 ## ローカルテスト手順
 
@@ -374,7 +403,7 @@ Dependabot（`.github/dependabot.yml`）が、npm依存とGitHub Actionsを毎�
 
 3. **コードを貼り付け**:
    - エディタのデフォルトコードを全削除
-   - `out/script.js` の内容をコピー＆ペースト
+   - `out/keeb-pd-result-scraper.user.js` の内容をコピー＆ペースト
 
 4. **保存**:
    - Ctrl+S（Windows/Linux）または Cmd+S（Mac）
@@ -390,7 +419,7 @@ Dependabot（`.github/dependabot.yml`）が、npm依存とGitHub Actionsを毎�
    - "+" ボタンをクリック
 
 3. **コードを貼り付け**:
-   - `out/script.js` の内容をコピー＆ペースト
+   - `out/keeb-pd-result-scraper.user.js` の内容をコピー＆ペースト
 
 4. **保存して閉じる**:
    - Ctrl+S または "保存して閉じる" ボタン
@@ -433,7 +462,7 @@ Dependabot（`.github/dependabot.yml`）が、npm依存とGitHub Actionsを毎�
 3. **Tampermonkeyで更新**:
    - ダッシュボードを開く
    - スクリプトを選択
-   - 編集画面で新しい `out/script.js` の内容をコピー＆ペースト
+   - 編集画面で新しい `out/keeb-pd-result-scraper.user.js` の内容をコピー＆ペースト
    - 保存
 4. **Twitter/Xページを再読み込み**（F5）
 5. **動作確認**
