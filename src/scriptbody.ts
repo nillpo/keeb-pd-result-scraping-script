@@ -7,6 +7,7 @@ import {
   parseEntryTweet,
   Tweet,
 } from "./tweet-parser.ts";
+import { createTweetExport } from "./tweet-export.ts";
 
 type StateContext = {
   searchTimelineObserver: MutationObserver;
@@ -274,13 +275,15 @@ const setupDownloadButton: ExecuteHandler<StateContext> = (event, context) => {
   // Download handler
   downloadButton.addEventListener("click", () => {
     const tweets = Array.from(context.collectedTweets.values());
-    const json = JSON.stringify(tweets, null, 2);
+    // JSONの collectedAt とファイル名のタイムスタンプを同じ時刻にする
+    const now = new Date();
+    const json = JSON.stringify(createTweetExport(tweets, now), null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const timestamp = now.toISOString().replace(/[:.]/g, "-");
     a.download = `keeb-pd-tweets-${timestamp}.json`;
     document.body.appendChild(a);
     a.click();

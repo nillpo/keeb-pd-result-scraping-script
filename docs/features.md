@@ -130,30 +130,44 @@ keeb-pd-tweets-YYYY-MM-DDTHH-MM-SS.json
 
 ### JSONフォーマット
 
-**構造**: Tweet オブジェクトの配列
+**構造**: メタ情報と、Tweet オブジェクトの配列（`tweets`）を持つオブジェクト
 
 ```json
-[
-  {
-    "date": "2026-02-15T12:34:56.000Z",
-    "fav": 42,
-    "retweet": 5,
-    "url": "/username/status/1234567890",
-    "userName": "ユーザー名",
-    "round": "1"
-  },
-  {
-    "date": "2026-02-15T13:20:10.000Z",
-    "fav": 38,
-    "retweet": 3,
-    "url": "/another/status/9876543210",
-    "userName": "別のユーザー🎹",
-    "round": "1"
-  }
-]
+{
+  "schemaVersion": 1,
+  "collectedAt": "2026-02-15T14:30:45.123Z",
+  "tweets": [
+    {
+      "date": "2026-02-15T12:34:56.000Z",
+      "fav": 42,
+      "retweet": 5,
+      "url": "/username/status/1234567890",
+      "userName": "ユーザー名",
+      "round": "1"
+    },
+    {
+      "date": "2026-02-15T13:20:10.000Z",
+      "fav": 38,
+      "retweet": 3,
+      "url": "/another/status/9876543210",
+      "userName": "別のユーザー🎹",
+      "round": "1"
+    }
+  ]
+}
 ```
 
-### フィールド詳細
+> このフォーマットの導入前（リリース v0.1.0 まで）は、`tweets` の配列だけをそのまま出力していました。読み込み側は `data.tweets` を参照してください。
+
+### トップレベルのフィールド
+
+| フィールド      | 型      | 説明                                                                       | 例                           |
+| --------------- | ------- | -------------------------------------------------------------------------- | ---------------------------- |
+| `schemaVersion` | number  | JSON形式のバージョン。構造を変えるときに上げます                           | `1`                          |
+| `collectedAt`   | string  | ダウンロードした日時（ISO 8601形式）。ファイル名のタイムスタンプと同じ時刻 | `"2026-02-15T14:30:45.123Z"` |
+| `tweets`        | Tweet[] | 収集したツイート                                                           |                              |
+
+### Tweet のフィールド
 
 | フィールド | 型     | 説明                             | 例                              |
 | ---------- | ------ | -------------------------------- | ------------------------------- |
@@ -178,7 +192,10 @@ keeb-pd-tweets-YYYY-MM-DDTHH-MM-SS.json
 import json
 
 with open('keeb-pd-tweets-2026-02-15T14-30-45.json', 'r', encoding='utf-8') as f:
-    tweets = json.load(f)
+    data = json.load(f)
+
+print(f"収集日時: {data['collectedAt']}")
+tweets = data['tweets']
 
 # いいね数トップ10
 top_10 = sorted(tweets, key=lambda t: t['fav'], reverse=True)[:10]
@@ -188,22 +205,24 @@ for tweet in top_10:
 
 ### 技術的な実装
 
-**実装箇所**: scriptbody.ts:158-174
+**実装箇所**: `src/scriptbody.ts`（ダウンロードボタンのクリック処理）、`src/tweet-export.ts`（`createTweetExport`: JSONの形式とメタ情報の生成）
 
 **ダウンロードフロー**:
 
 ```typescript
 1. Array.from(context.collectedTweets.values())  // Map → 配列変換
    ↓
-2. JSON.stringify(tweets, null, 2)               // インデント付きJSON
+2. createTweetExport(tweets, now)                // メタ情報（schemaVersion / collectedAt）を付与
    ↓
-3. new Blob([json], { type: "application/json" }) // Blob作成
+3. JSON.stringify(..., null, 2)                  // インデント付きJSON
    ↓
-4. URL.createObjectURL(blob)                     // 一時URL生成
+4. new Blob([json], { type: "application/json" }) // Blob作成
    ↓
-5. <a> 要素で download 属性を使用してダウンロード
+5. URL.createObjectURL(blob)                     // 一時URL生成
    ↓
-6. URL.revokeObjectURL(url)                      // 一時URLを解放
+6. <a> 要素で download 属性を使用してダウンロード
+   ↓
+7. URL.revokeObjectURL(url)                      // 一時URLを解放
 ```
 
 ## フローティングコントロールパネル
