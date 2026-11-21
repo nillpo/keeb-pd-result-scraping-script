@@ -15,3 +15,8 @@ export function createTweetExport(tweets: Tweet[], collectedAt: Date): TweetExpo
     tweets,
   };
 }
+
+// ファイル名のタイムスタンプは JSON の collectedAt と同じ時刻を使う
+export function createDownloadFileName(date: Date): string {
+  return `keeb-pd-tweets-${date.toISOString().replace(/[:.]/g, "-")}.json`;
+}

@@ -15,6 +15,7 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 - **パッケージマネージャー**: pnpm（`packageManager`で固定）
 - **言語**: TypeScript（strict typing、`any`禁止）
 - **バンドラー**: Rolldown
+- **テスト**: Vitest + jsdom（`src/`に`*.test.ts`を併置。`scriptbody.ts`は import 時に副作用があるためテスト対象外）
 - **リンター / フォーマッター**: oxlint / oxfmt（型チェックは `tsc`）
 - **出力**:
   Tampermonkey/Violentmonkey/Greasemonkey互換のユーザースクリプト（.js）
@@ -210,6 +211,7 @@ pnpm build
 # 検証
 pnpm typecheck   # tsc
 pnpm lint        # oxlint
+pnpm test        # vitest（src/**/*.test.ts。DOMが要るファイルは先頭に `// @vitest-environment jsdom`）
 pnpm fmt:check   # oxfmt（整形は pnpm fmt）
 ```
 
