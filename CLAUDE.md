@@ -15,7 +15,7 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 - **パッケージマネージャー**: pnpm（`packageManager`で固定）
 - **言語**: TypeScript（strict typing、`any`禁止）
 - **バンドラー**: Rolldown
-- **テスト**: Vitest + jsdom（`src/`に`*.test.ts`を併置。`scriptbody.ts`は import 時に副作用があるためテスト対象外）
+- **テスト**: Vitest + jsdom（`src/`に`*.test.ts`を併置。ロジックは`app.ts`の`createApp(deps)`にあり、`scriptbody.ts`は import 時に副作用がある薄いエントリなのでテストでは import しない。`test-fixtures.ts`はテスト用のツイートDOM）
 - **リンター / フォーマッター**: oxlint / oxfmt（型チェックは `tsc`）
 - **出力**:
   Tampermonkey/Violentmonkey/Greasemonkey互換のユーザースクリプト（.js）
@@ -25,7 +25,9 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 ```
 /workspaces/
 ├── src/
-│   ├── scriptbody.ts       # メインアプリケーションロジック、MutationObserver設定
+│   ├── scriptbody.ts       # エントリ（createApp を呼んで開始するだけ）
+│   ├── app.ts              # メインアプリケーションロジック（createApp）、MutationObserver設定
+│   ├── url.ts              # 検索URL・投稿URLの判定
 │   ├── state-machine.ts    # 汎用状態機械実装（6状態、8イベントタイプ）
 │   ├── tweet-parser.ts     # ツイートDOM解析とフィルタリングユーティリティ
 │   ├── tweet-export.ts     # ダウンロードするJSONの形式（メタ情報の付与）
@@ -94,7 +96,7 @@ type Tweet = {
 };
 ```
 
-### メインスクリプト（scriptbody.ts）
+### メインスクリプト（app.ts / scriptbody.ts）
 
 MutationObserverの設定と遷移ハンドラーの定義。
 
@@ -143,7 +145,7 @@ API（ポリフィルなし）。Node.js APIは`builder.ts`でのみ使用でき
 **重要なセレクタ**:
 
 - タイムライン: `div[aria-label="タイムライン: タイムラインを検索"]`
-  (scriptbody.ts:322)
+  (app.ts)
 - プロモーションテキスト: `"プロモーション"` (tweet-parser.ts:30)
 
 ### Twitter DOM依存
@@ -256,8 +258,8 @@ pnpm fmt:check   # oxfmt（整形は pnpm fmt）
 
 ### ツイートが検出されない
 
-1. URLパターン確認（`isKEEBPDSearchURL` の条件、scriptbody.ts:21）
-2. タイムラインセレクタ確認（scriptbody.ts:322）
+1. URLパターン確認（`url.ts` の `isKEEBPDSearchURL` の条件）
+2. タイムラインセレクタ確認（app.ts）
 3. DevToolsでツイートDOM構造を確認し、`tweet-parser.ts` のセレクタを更新
 
 ### ビルドエラー
