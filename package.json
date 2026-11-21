@@ -1,6 +1,6 @@
 {
   "name": "keeb-pd-result-scraper",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Userscript that scrapes KEEB_PD results from Twitter/X",
   "type": "module",
