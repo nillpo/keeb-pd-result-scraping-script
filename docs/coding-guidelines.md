@@ -448,8 +448,8 @@ minimumReleaseAgeStrict: true
     "dev": "node --watch --watch-path=./src --watch-path=./builder.ts builder.ts",
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json",
     "lint": "oxlint",
-    "fmt": "oxfmt src builder.ts",
-    "fmt:check": "oxfmt --check src builder.ts"
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   }
 }
 ```
@@ -460,7 +460,7 @@ minimumReleaseAgeStrict: true
 
 - **型チェック**: `tsc`（`src/`はブラウザ向け`tsconfig.app.json`、`builder.ts`はNode向け`tsconfig.node.json`。ルートの`tsconfig.json`は両者を束ねるproject referencesで、エディタが各ファイルに正しい設定を適用するために使います）。バンドラーは型チェックを行わないため、必ず`pnpm typecheck`を実行します
 - **リント**: `oxlint`（設定は`.oxlintrc.json`）。`typescript/no-explicit-any`をerrorとして`any`を禁止します
-- **フォーマット**: `oxfmt`（`pnpm fmt`）
+- **フォーマット**: `oxfmt`（`pnpm fmt`。設定は`.oxfmtrc.json`で、プロジェクト全体が対象。`out/`と`pnpm-lock.yaml`は除外し、Markdown内のコードブロックは整形しません）
 
 ## パフォーマンス最適化
 
