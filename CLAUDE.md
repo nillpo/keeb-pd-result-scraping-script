@@ -28,6 +28,7 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 │   ├── scriptbody.ts       # エントリ（createApp を呼んで開始するだけ）
 │   ├── app.ts              # メインアプリケーションロジック（createApp）、MutationObserver設定
 │   ├── url.ts              # 検索URL・投稿URLの判定
+│   ├── test-fixtures.ts    # テスト用のツイートDOM（バンドルには入らない）
 │   ├── state-machine.ts    # 汎用状態機械実装（6状態、8イベントタイプ）
 │   ├── tweet-parser.ts     # ツイートDOM解析とフィルタリングユーティリティ
 │   ├── tweet-export.ts     # ダウンロードするJSONの形式（メタ情報の付与）
@@ -154,7 +155,7 @@ Twitter/XはDOM構造を頻繁に変更します。セレクタが動作しな�
 
 1. DevToolsで現在のDOM構造を確認
 2. `data-testid` または `aria-label` の更新を確認
-3. `scriptbody.ts` または `tweet-parser.ts` のセレクタを更新
+3. `app.ts` または `tweet-parser.ts` のセレクタを更新
 
 **よく使われるセレクタ**:
 

@@ -84,6 +84,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  Reflect.deleteProperty(URL, "createObjectURL");
+  Reflect.deleteProperty(URL, "revokeObjectURL");
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -217,6 +219,7 @@ describe("パネル", () => {
   it("ダウンロードで JSON を保存し、後始末をする", () => {
     const createObjectURL = vi.fn((_blob: Blob) => "blob:test");
     const revokeObjectURL = vi.fn();
+    // jsdom の URL には無いので、テストのあいだだけ差し込む（afterEach で消す）
     Object.assign(URL, { createObjectURL, revokeObjectURL });
     const downloads: string[] = [];
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
@@ -277,6 +280,17 @@ describe("検索ページから離れたとき", () => {
     h.pageMutated();
     expect(h.app.getState()).toBe("MONITORING_SEARCH_PAGE");
     expect(h.app.getContext().collectedTweets.size).toBe(1);
+  });
+
+  it("パネルが既にあっても、検索ページの読み込み時に1つだけ作り直す", () => {
+    const h = setup();
+    h.app.start();
+    document.body.innerHTML = `<div aria-label="${TIMELINE_LABEL}"></div><div id="${PANEL_ID}">古いパネル</div>`;
+    navigate(SEARCH_URL);
+    h.pageMutated();
+    const panels = document.querySelectorAll(`#${PANEL_ID}`);
+    expect(panels).toHaveLength(1);
+    expect(panels[0].textContent).not.toContain("古いパネル");
   });
 
   it("離れてから検索ページに戻ると、パネルを作り直す", () => {
@@ -368,5 +382,6 @@ describe("投稿ページ", () => {
     expect(h.app.getContext().collectedTweets.size).toBe(0);
   });
 
+  // LOADING_* には PAGE_CHANGED の遷移自体が無く、読み込み中に離れると固まる（これも修正待ち）
   it.todo("読み込み中（LOADING_*）にページを離れても OBSERVING_TWITTER_PAGE に戻る");
 });

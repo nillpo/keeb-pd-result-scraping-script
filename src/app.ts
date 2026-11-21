@@ -15,7 +15,7 @@ import { COMPOSE_POST_PATH, isKEEBPDSearchURL } from "./url.ts";
 
 type Observer = Pick<MutationObserver, "observe" | "disconnect">;
 
-type StateContext = {
+export type StateContext = {
   searchTimelineObserver: Observer;
   twitterPageObserver: Observer;
   listeners: ReturnType<typeof setInterval>[];
@@ -29,6 +29,7 @@ export type AppDeps = {
 };
 
 export type App = {
+  // getContext はテスト用。本番コードでは使わない
   // BEGIN_OBSERVING を dispatch する
   start: () => void;
   getState: () => State;
@@ -45,6 +46,7 @@ export const filterTweetNodes = (mutations: MutationRecord[]): Element[] =>
     }),
   );
 
+// 注入するのは document と MutationObserver の生成だけ。navigator.clipboard / URL / setInterval などはグローバルのまま
 export function createApp({ document, createObserver }: AppDeps): App {
   const observeTwitterPage: ExecuteHandler<StateContext> = (_event, context) => {
     context.twitterPageObserver.observe(document, {
@@ -141,6 +143,8 @@ export function createApp({ document, createObserver }: AppDeps): App {
     document.body.appendChild(panel.element);
   };
 
+  // 注意: 下の observer のコールバックは stateMachine を参照するが、定義はこの後。
+  // コールバックは start() 以降にしか呼ばれないので問題ない
   const twitterPageObserver = createObserver(() => {
     stateMachine.tryDispatch({
       type: "DETECT_SEARCH_URL",
@@ -335,6 +339,8 @@ export function createApp({ document, createObserver }: AppDeps): App {
         return isKEEBPDSearchURL(new URL(event.url));
       },
     },
+    // NOTE: この遷移は到達できない既知のバグ。StateMachine は (from, event) が一致する最初の遷移
+    // （上の MONITORING_SEARCH_PAGE へ戻る方）しか評価しない。src/app.test.ts の "KNOWN BUG" を参照
     {
       from: "MONITORING_COMPOSE_PAGE",
       event: "PAGE_CHANGED",
