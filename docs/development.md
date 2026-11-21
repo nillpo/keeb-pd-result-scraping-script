@@ -117,7 +117,7 @@ Containers拡張機能を使用し、Docker内で開発します。環境構築�
 
 - Node.js（LTS、`.devcontainer/Dockerfile` の `NODE_VERSION` で固定）
 - pnpm（`PNPM_VERSION` で固定）
-- GitHub CLI
+- GitHub CLI（バージョンは `.devcontainer/devcontainer-lock.json` で固定。Dev Containers CLI が生成するため手で編集しない）
 - Claude Code
 
 **永続ボリューム**:
