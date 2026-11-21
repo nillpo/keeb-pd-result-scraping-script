@@ -125,6 +125,7 @@ Containers拡張機能を使用し、Docker内で開発します。環境構築�
 - `~/.claude`: Claude Code設定
 - bashコマンド履歴
 - GitHub CLI設定
+- `node_modules`（`/workspaces/node_modules`。ホストのバインドマウントと分離し、OS差異の回避とI/O高速化を図る。pnpmストアも同じボリューム内にあるためハードリンクが有効）
 
 **ユーザー**: `vscode`（非root）
 
