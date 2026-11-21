@@ -1,52 +1,53 @@
-import * as esbuild from "esbuild";
-import { denoPlugin } from "@deno/esbuild-plugin";
+import { spawn } from "node:child_process";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { rolldown } from "rolldown";
 import { metablock } from "./src/metablock.ts";
 
-const url = new URL("./src/scriptbody.ts", import.meta.url);
-await esbuild.initialize({});
-const result = await esbuild.build({
-  bundle: true,
-  outdir: "./out",
-  entryPoints: [url.toString()],
-  write: false,
-  plugins: [denoPlugin()],
-  target: "esnext",
-  platform: "browser",
-  format: "esm",
-});
+const entry = new URL("./src/scriptbody.ts", import.meta.url);
+const outDir = new URL("./out/", import.meta.url);
+const outFile = new URL("./script.js", outDir);
 
-const script = `${metablock}\n\n${result.outputFiles[0].text}`;
-esbuild.stop();
-async function isExist(
-  path: string,
-): Promise<{ isExist: false } | { isExist: true; isDirectory: boolean }> {
+async function bundle(): Promise<string> {
+  const build = await rolldown({
+    input: entry.pathname,
+    platform: "browser",
+  });
   try {
-    const stat = await Deno.stat(path);
-    return { isExist: true, isDirectory: stat.isDirectory };
-  } catch (_) {
-    return { isExist: false };
+    const { output } = await build.generate({ format: "esm" });
+    const chunk = output.find((o) => o.type === "chunk");
+    if (chunk === undefined) {
+      throw new Error("Rolldown produced no chunk");
+    }
+    return chunk.code;
+  } finally {
+    await build.close();
   }
 }
 
-const fileCheck = await isExist("./out");
-if (fileCheck.isExist && fileCheck.isDirectory) {
-  await Deno.remove("./out", { recursive: true });
+// oxfmt はstdinを受け付けるため、バンドル結果をパイプで渡して整形する
+function format(source: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn("oxfmt", ["--stdin-filepath", "script.js"], {
+      stdio: ["pipe", "pipe", "inherit"],
+    });
+    const chunks: Buffer[] = [];
+    proc.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+    proc.on("error", reject);
+    proc.on("close", (code) => {
+      if (code === 0) {
+        resolve(Buffer.concat(chunks).toString("utf8"));
+      } else {
+        reject(new Error(`oxfmt exited with code ${code}`));
+      }
+    });
+    proc.stdin.end(source);
+  });
 }
-await Deno.mkdir("./out");
-const proc = new Deno.Command(Deno.execPath(), {
-  args: ["fmt", "-"],
-  stdin: "piped",
-  stdout: "piped",
-  stderr: "null",
-}).spawn();
 
-const raw = new ReadableStream({
-  start(controller) {
-    controller.enqueue(new TextEncoder().encode(script));
-    controller.close();
-  },
-});
-await raw.pipeTo(proc.stdin);
-const { stdout } = await proc.output();
-const scriptFmt = new TextDecoder().decode(stdout);
-await Deno.writeTextFile("./out/script.js", scriptFmt);
+const script = `${metablock}\n\n${await bundle()}`;
+const formatted = await format(script);
+
+await rm(outDir, { recursive: true, force: true });
+await mkdir(outDir, { recursive: true });
+await writeFile(outFile, formatted);
+console.log(`Built ${outFile.pathname}`);

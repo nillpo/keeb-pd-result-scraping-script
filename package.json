@@ -9,10 +9,12 @@
     "node": ">=26.13.1"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint": "oxlint",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "build": "node builder.ts",
+    "dev": "node --watch --watch-path=./src --watch-path=./builder.ts builder.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
