@@ -51,33 +51,33 @@ Twitter/Xは動的にコンテンツを読み込むため、DOMの変更を検�
   スクロール検出には有効だが、DOM構造変更は検出できない
 - **イベントリスナー**: Twitter/Xの内部イベントに依存するため、変更に弱い
 
-### なぜesbuild + Denoか
+### なぜNode.js + pnpm + Rolldown + Oxcか
 
-**esbuildの利点**:
+**Rolldownの利点**:
 
-- **高速ビルド**: Goで実装され、大規模プロジェクトでも数秒でバンドル
+- **高速ビルド**: Rustで実装され、単一エントリのバンドルは一瞬で完了
 - **Tree-shaking**: 未使用コードを自動削除し、ファイルサイズを最小化
 - **TypeScript対応**: 追加設定なしでTypeScriptをトランスパイル
+- **Viteの標準バンドラー**: Vite 8以降で採用されており、エコシステムの主流
 
-**Denoの利点**:
+**Node.js + pnpmの利点**:
 
-- **依存関係管理不要**: `node_modules` がなく、URLベースのインポート
-- **標準ツール内蔵**:
-  フォーマッター（`deno fmt`）、リンター（`deno lint`）が標準搭載
-- **セキュアデフォルト**:
-  明示的な権限なしでファイルシステムやネットワークにアクセス不可
+- **長期サポート**: Node.js LTSを使用し、ランタイムの継続的なメンテナンスが保証される
+- **ネイティブTypeScript実行**: `builder.ts`をtype strippingで直接実行でき、トランスパイラ不要
+- **厳格な依存関係管理**: `pnpm-lock.yaml`とpnpmの`minimumReleaseAge`（公開から7日未満のバージョンを除外）、`allowBuilds`（ビルドスクリプトの許可制）でサプライチェーンリスクを抑える
 
-**@deno/esbuild-pluginの役割**:
+**Oxcツールチェーン**:
 
-- esbuildがDeno特有のインポート（JSR、npm、https）を解決できるようにする
-- Deno公式プラグイン（`jsr:@deno/esbuild-plugin`）として提供され、安定性とメンテナンスが保証される
-- `npm:esbuild` と組み合わせて高速なバンドルを実現
+- `oxlint`: リンター（`typescript/no-explicit-any`でany禁止を強制）
+- `oxfmt`: フォーマッター（Prettier互換、ビルド成果物の整形にもstdin経由で使用）
+- `tsc`: 型チェック（バンドラーは型チェックを行わないため別途実行）
 
 **代替案との比較**:
 
-- **Webpack + Node.js**: 設定が複雑、ビルド時間が長い、`node_modules` が必要
-- **Vite**: 開発サーバー中心で、単一ファイル出力（ユーザースクリプト）には不向き
-- **Rollup**: esbuildより遅いが、プラグインエコシステムは豊富
+- **esbuild**: 十分に高速で安定しているが、Oxc系ツールチェーンと統一できるRolldownを採用
+- **Webpack**: 設定が複雑、ビルド時間が長い
+- **Vite + vite-plugin-monkey**: メタブロック生成等は便利だが、単一エントリのスクリプトには依存と設定が過剰
+- **Rollup**: Rolldownの方が高速で、Rollup互換APIも提供される
 
 ## 状態機械の仕様
 
@@ -623,8 +623,7 @@ KEEB_PD検索ページ (R1)
 
 **ビルド時依存**:
 
-- `esbuild`: OpenJS Foundation公式プロジェクト、広く使用されている
-- `deno-loader`: Deno公式のesbuildローダー
+- `rolldown` / `oxlint` / `oxfmt` / `typescript`: ビルド・検証用の開発依存。バージョンは固定し、公開から7日未満のバージョンは導入しない
 
 **ランタイム依存**:
 

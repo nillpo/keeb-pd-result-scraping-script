@@ -15,71 +15,59 @@ Scraperの開発環境セットアップと開発ワークフローについて�
 
 このプロジェクトは3つの開発環境オプションを提供しています。開発者の好みや環境に応じて選択してください。
 
-### オプション1: ローカルDeno開発（推奨）
+### オプション1: ローカルNode.js + pnpm開発（推奨）
 
-最もシンプルで高速な開発環境です。Denoをインストールするだけで始められます。
+最もシンプルで高速な開発環境です。Node.jsとpnpmをインストールするだけで始められます。
 
 #### 前提条件
 
-- **Deno**: 最新版（1.40以降を推奨）
-- **VS Code**（オプション、推奨）: Deno拡張機能と組み合わせて使用
+- **Node.js**: 26.13.1以降（LTS。`builder.ts` をtype strippingで直接実行するため）
+- **pnpm**: 12.21.0（`package.json` の `packageManager` に固定。10.16以降で `minimumReleaseAge` が使えます）
+- **VS Code**（オプション、推奨）: Oxc拡張機能と組み合わせて使用
 
-#### Denoのインストール
+#### Node.js / pnpmのインストール
 
-**macOS / Linux**:
+Node.jsは [公式サイト](https://nodejs.org/) のインストーラー、または `nvm` / `fnm` などのバージョンマネージャーで導入します。
 
-```bash
-curl -fsSL https://deno.land/install.sh | sh
-```
-
-**Windows (PowerShell)**:
-
-```powershell
-irm https://deno.land/install.ps1 | iex
-```
-
-**Homebrew (macOS)**:
+**pnpmのインストール**（Node.js 25以降は `corepack` が同梱されないためnpm経由）:
 
 ```bash
-brew install deno
+npm install -g pnpm@12.21.0
 ```
 
 **インストール確認**:
 
 ```bash
-deno --version
-# 出力例: deno 1.40.0 (release, x86_64-apple-darwin)
+node --version   # v26.13.1 以降
+pnpm --version   # 12.21.0
 ```
 
 #### VS Code設定
 
-1. **Deno拡張機能のインストール**:
+1. **Oxc拡張機能のインストール**:
    - VS Codeで「拡張機能」を開く（Ctrl+Shift+X / Cmd+Shift+X）
-   - "Deno" で検索
-   - "Deno" (by denoland) をインストール
+   - "Oxc" で検索し、`oxc.oxc-vscode` をインストール
 
 2. **プロジェクト設定**: このプロジェクトには `.vscode/settings.json`
    が含まれており、以下が自動的に有効になります：
    ```json
    {
-     "deno.enable": true,
-     "deno.lint": true,
-     "deno.unstable": false
+     "editor.defaultFormatter": "oxc.oxc-vscode",
+     "editor.formatOnSave": true
    }
    ```
 
 3. **機能**:
+   - 保存時の自動フォーマット（oxfmt）
+   - インラインのリント診断（oxlint）
    - TypeScript IntelliSense（型補完）
-   - JSRとnpmパッケージのインポート解決
-   - インライン型チェック
-   - デバッグサポート
 
 #### メリット
 
-- **高速**: ビルドが非常に速い（esbuildベース）
-- **軽量**: `node_modules` がないため、ディスク使用量が少ない
-- **標準ツール内蔵**: フォーマッター、リンターが標準搭載
-- **セキュア**: 権限ベースのセキュリティモデル
+- **高速**: ビルド・リント・フォーマットがいずれも高速（Rust製ツールチェーン）
+- **標準的**: Node.js + pnpmで、エコシステムの情報が豊富
+- **再現性**: `pnpm-lock.yaml` と固定バージョンで同じ環境を再現
+- **安全寄り**: 公開7日未満のバージョンを導入しない設定
 
 ### オプション2: DevContainer（VS Code）
 
@@ -112,28 +100,31 @@ Containers拡張機能を使用し、Docker内で開発します。環境構築�
 
 4. **自動セットアップ**:
    - Dockerイメージのビルド（初回のみ、数分かかる）
-   - Denoのインストール
-   - VS Code拡張機能の自動インストール
+   - Node.js・pnpmのインストール
+   - `pnpm install --frozen-lockfile`（post-create）
+   - VS Code拡張機能（Oxc）の自動インストール
 
 5. **開発開始**:
    - ターミナルが自動的に開く
-   - `deno task dev` でビルド開始
+   - `pnpm dev` でビルド開始
 
 #### DevContainerの構成
 
 **ベースイメージ**:
-`mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye`
+`mcr.microsoft.com/devcontainers/base:ubuntu`
 
 **インストールされる機能**:
 
-- Deno（最新版）
+- Node.js（LTS、`.devcontainer/Dockerfile` の `NODE_VERSION` で固定）
+- pnpm（`PNPM_VERSION` で固定）
 - GitHub CLI
-- Git
+- Claude Code
 
 **永続ボリューム**:
 
-- `~/.claude`: Claude Code設定（ホストと共有）
+- `~/.claude`: Claude Code設定
 - bashコマンド履歴
+- GitHub CLI設定
 
 **ユーザー**: `vscode`（非root）
 
@@ -180,7 +171,7 @@ Code機能を使用する場合に便利です。
 
 4. **開発開始**:
    ```bash
-   deno task dev
+   pnpm install --frozen-lockfile && pnpm dev
    ```
 
 5. **コンテナ停止**:
@@ -216,22 +207,16 @@ networks:
 
 **Dockerfile の内容**:
 
+`.devcontainer/Dockerfile` と同様に、Node.js（公式tarball、SHA256検証）とpnpmをインストールします。詳細は `.devcontainer/Dockerfile` を参照してください。
+
 ```dockerfile
-FROM mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye
-
-# Install Deno
-RUN curl -fsSL https://deno.land/install.sh | sh
-ENV DENO_INSTALL="/root/.deno"
-ENV PATH="$DENO_INSTALL/bin:$PATH"
-
-# Install GitHub CLI
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-    && apt update \
-    && apt install gh -y
+FROM mcr.microsoft.com/devcontainers/base:ubuntu
+ARG NODE_VERSION=26.13.1
+ARG PNPM_VERSION=12.21.0
 
 USER vscode
+# Node.js と pnpm を ~/.local/node にインストール（詳細は .devcontainer/Dockerfile）
+ENV PATH="/home/vscode/.local/node/bin:${PATH}"
 WORKDIR /workspace
 ```
 
@@ -260,59 +245,52 @@ git clone https://github.com/nillpo/keeb-pd-scraper.git
 cd keeb-pd-scraper
 ```
 
-### 依存関係の確認
-
-このプロジェクトはDeno URLベースのインポートを使用しているため、`npm install`
-は不要です。
-
-**依存関係リスト**（`deno.jsonc` の `imports` フィールド）:
-
-```jsonc
-{
-  "imports": {
-    "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",
-    "esbuild": "npm:esbuild@^0.27.3"
-  }
-}
-```
-
-**キャッシュ更新**（必要に応じて）:
+### 依存関係のインストール
 
 ```bash
-deno cache --reload builder.ts
+pnpm install --frozen-lockfile
 ```
 
-### deno.lock の確認
+**開発依存**（`package.json` の `devDependencies`、バージョンは固定）:
 
-`deno.lock`
-ファイルは依存関係のバージョンを固定します。チームで同じバージョンを使用するため、このファイルをgit管理しています。
+- `rolldown`: バンドラー
+- `oxlint`: リンター
+- `oxfmt`: フォーマッター
+- `typescript`: 型チェック（`tsc`）
+- `@types/node`: `builder.ts` 用のNode型定義
 
-**ロックファイル更新**（依存関係を変更した場合）:
+### pnpm-lock.yaml と公開7日ルール
+
+`pnpm-lock.yaml` は依存関係のバージョンを固定します。チームで同じバージョンを使用するため、このファイルをgit管理しています。
+
+`pnpm-workspace.yaml` の `minimumReleaseAge: 10080`（7日）により、公開から7日未満のバージョンは導入されません（サプライチェーン対策）。依存を追加・更新する場合:
 
 ```bash
-deno cache --reload --lock=deno.lock --lock-write builder.ts
+pnpm add -D --save-exact <package>
 ```
+
+直近に公開された最新版は自動的に除外され、7日以上経過した版が選択されます。
 
 ## ビルドコマンド
 
 ### 開発ビルド（ファイル監視）
 
 ```bash
-deno task dev
+pnpm dev
 ```
 
 **動作**:
 
-- `src/` ディレクトリのファイル変更を監視
+- `src/` と `builder.ts` の変更を `node --watch` で監視
 - 変更検出時に自動的に再ビルド
 - `out/script.js` を更新
 
 **ログ出力**:
 
 ```
-Task dev deno run --allow-read --allow-write --allow-env --allow-net --allow-run --watch builder.ts
-Watcher Process started.
-Built script.js successfully
+> node --watch --watch-path=./src --watch-path=./builder.ts builder.ts
+Built /workspaces/out/script.js
+Completed running 'builder.ts'
 ```
 
 **停止方法**: Ctrl+C
@@ -320,7 +298,7 @@ Built script.js successfully
 ### 本番ビルド（単発実行）
 
 ```bash
-deno task build
+pnpm build
 ```
 
 **動作**:
@@ -334,51 +312,37 @@ deno task build
 - リリース前の最終ビルド
 - CI/CDパイプラインでの自動ビルド
 
+### 検証コマンド
+
+```bash
+pnpm typecheck   # tsc による型チェック（src: ブラウザ向け / builder.ts: Node向け）
+pnpm lint        # oxlint（any禁止などを検査）
+pnpm fmt         # oxfmt で整形
+pnpm fmt:check   # 整形済みかの確認のみ
+```
+
+バンドラーは型チェックを行わないため、コミット前に `pnpm typecheck` を実行してください。
+
 ### ビルドプロセス詳細
 
 `builder.ts` が実行する処理（順番に）:
 
-1. **esbuildでバンドル**:
+1. **Rolldownでバンドル**:
    - エントリーポイント: `src/scriptbody.ts`
-   - プラグイン: `denoPlugin` でDeno importsを解決
-   - 出力: 一時的なJavaScriptコード
+   - `platform: "browser"`、出力形式: ESM（1ファイル）
+   - 出力: 一時的なJavaScriptコード（メモリ上）
 
 2. **メタデータヘッダー追加**:
    - `src/metablock.ts` からユーザースクリプトヘッダーを取得
    - バンドル済みコードの先頭に追加
 
 3. **フォーマット**:
-   - `deno fmt` を実行し、コードを整形
+   - `oxfmt --stdin-filepath script.js` にstdin経由で渡し、整形結果を受け取る
 
 4. **ファイル書き込み**:
-   - `out/script.js` に最終的なユーザースクリプトを保存
+   - `out/` を作り直し、`out/script.js` に最終的なユーザースクリプトを保存
 
-**builder.ts の主要コード**:
-
-```typescript
-import * as esbuild from "esbuild";
-import { denoPlugin } from "@deno/esbuild-plugin";
-import { metablock } from "./src/metablock.ts";
-
-const result = await esbuild.build({
-  plugins: [denoPlugin()],
-  entryPoints: ["./src/scriptbody.ts"],
-  bundle: true,
-  format: "iife",
-  write: false,
-});
-
-const code = new TextDecoder().decode(result.outputFiles[0].contents);
-const script = metablock + "\n" + code;
-
-await Deno.writeTextFile("./out/script.js", script);
-
-// deno fmt で整形
-const fmt = new Deno.Command("deno", {
-  args: ["fmt", "./out/script.js"],
-});
-await fmt.output();
-```
+`builder.ts` はNodeのtype strippingで直接実行されます（`node builder.ts`）。Node.js 26以降が必要です。
 
 ## ローカルテスト手順
 
@@ -450,7 +414,7 @@ await fmt.output();
 ### ステップ3: コード変更時の再テスト
 
 1. **コードを変更**（例：`src/tweet-parser.ts`）
-2. **ビルドを待つ**（`deno task dev` を実行中の場合、自動ビルド）
+2. **ビルドを待つ**（`pnpm dev` を実行中の場合、自動ビルド）
 3. **Tampermonkeyで更新**:
    - ダッシュボードを開く
    - スクリプトを選択
@@ -639,34 +603,34 @@ const searchTimelineObserver = new MutationObserver((mutations, _observer) => {
 **エラー例**:
 
 ```
-error: Module not found "jsr:@deno/esbuild-plugin@^1.2.1"
+Error: Cannot find package 'rolldown' imported from /workspaces/builder.ts
 ```
 
-**解決方法**:
+**解決方法**: 依存関係をインストールします:
 
 ```bash
-deno cache --reload builder.ts
+pnpm install --frozen-lockfile
 ```
 
 **エラー例**:
 
 ```
-error: Uncaught (in promise) PermissionDenied: Requires write access to "./out/script.js"
+spawn oxfmt ENOENT
 ```
 
-**解決方法**: `deno.jsonc` のタスク定義に `--allow-write` があるか確認:
+**解決方法**: `oxfmt` は `node_modules/.bin` にあるため、`node builder.ts` を直接実行せず `pnpm build` 経由で実行してください。
 
-```jsonc
-{
-  "tasks": {
-    "build": "deno run --allow-read --allow-write --allow-env --allow-net --allow-run builder.ts"
-  }
-}
+**エラー例**:
+
 ```
+ERR_PNPM_NO_MATURE_MATCHING_VERSION
+```
+
+**原因**: `minimumReleaseAge`（公開から7日）を満たすバージョンが無い。公開から7日経過するまで待つか、古いバージョンを指定してください。`minimumReleaseAgeExclude` による例外指定は原則使用しません。
 
 ## まとめ
 
-このプロジェクトは柔軟な開発環境を提供しており、ローカルDeno開発、DevContainer、Docker
+このプロジェクトは柔軟な開発環境を提供しており、ローカルNode.js + pnpm開発、DevContainer、Docker
 Composeのいずれかを選択できます。ビルドコマンドはシンプルで、ローカルテストはブラウザのスクリプトマネージャーで簡単に行えます。デバッグにはBrowser
 DevToolsを活用し、状態機械のログやパフォーマンスプロファイリングで問題を迅速に特定できます。
 

@@ -8,7 +8,7 @@ Scraperプロジェクトのコーディング規約とベストプラクティ�
 - [TypeScriptスタイルガイド](#typescriptスタイルガイド)
 - [DOM操作パターン](#dom操作パターン)
 - [状態機械設計パターン](#状態機械設計パターン)
-- [Deno規約](#deno規約)
+- [Node.js / pnpm規約](#nodejs--pnpm規約)
 - [パフォーマンス最適化](#パフォーマンス最適化)
 - [ブラウザ互換性](#ブラウザ互換性)
 
@@ -404,86 +404,63 @@ stateMachine.addListener((result) => {
 });
 ```
 
-## Deno規約
+## Node.js / pnpm規約
 
-### JSRインポート
+### 依存関係の管理
 
-Denoモジュールは`jsr:`プレフィックスを使用してインポートします。
-
-**良い例**:
-
-```typescript
-import { denoPlugin } from "jsr:@deno/esbuild-plugin@^1.2.1";
-```
-
-### npmインポート
-
-Node.jsパッケージは`npm:`プレフィックスを使用してインポートします。
+全ての依存パッケージは`package.json`の`devDependencies`に記載し、`pnpm add -D --save-exact <pkg>`でバージョンを固定します。
 
 **良い例**:
 
 ```typescript
-import * as esbuild from "npm:esbuild@^0.27.3";
+import { rolldown } from "rolldown";
+import { spawn } from "node:child_process";
 ```
 
-### imports map必須
+### node:プレフィックス
 
-全てのインポートは`deno.jsonc`の`imports`フィールドに記載します。
+Node.js組み込みモジュールは`node:`プレフィックス付きでインポートします（ビルドスクリプト`builder.ts`のみで使用可。`src/`では使用禁止）。
 
-**deno.jsonc**:
+### pnpm-lock.yaml使用
+
+再現可能ビルドのため`pnpm-lock.yaml`をコミットし、CI・devcontainerでは`pnpm install --frozen-lockfile`を使います。
+
+### 公開直後のバージョンを入れない
+
+サプライチェーン攻撃対策として、`pnpm-workspace.yaml`で公開から7日未満のバージョンを解決対象から除外します。
+
+```yaml
+minimumReleaseAge: 10080 # 分（7日）
+minimumReleaseAgeStrict: true
+```
+
+- `minimumReleaseAgeExclude`による例外指定は原則使用しない
+- 依存パッケージのビルドスクリプトは`allowBuilds`で明示的に許可したものだけ実行する（`strictDepBuilds: true`）
+
+### スクリプト定義
+
+`package.json`の`scripts`で頻繁に使用するコマンドを定義します。
 
 ```jsonc
 {
-  "imports": {
-    "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",
-    "esbuild": "npm:esbuild@^0.27.3"
+  "scripts": {
+    "build": "node builder.ts",
+    "dev": "node --watch --watch-path=./src --watch-path=./builder.ts builder.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "lint": "oxlint",
+    "fmt": "oxfmt src builder.ts",
+    "fmt:check": "oxfmt --check src builder.ts"
   }
 }
 ```
 
-**使用時**:
+`builder.ts`はNodeのtype stripping（Node 26）で直接実行するため、トランスパイラは不要です。
 
-```typescript
-import * as esbuild from "esbuild";
-import { denoPlugin } from "@deno/esbuild-plugin";
-```
+### 型チェック・リント・フォーマット
 
-### deno.lock使用
-
-依存関係のバージョンを固定するため、`deno.lock`を使用します。
-
-**ロックファイル更新**:
-
-```bash
-deno cache --reload --lock=deno.lock --lock-write builder.ts
-```
-
-### タスク定義
-
-`deno.jsonc`の`tasks`フィールドで頻繁に使用するコマンドを定義します。
-
-**deno.jsonc**:
-
-```jsonc
-{
-  "tasks": {
-    "dev": "deno run --allow-read --allow-write --allow-env --allow-net --allow-run --watch builder.ts",
-    "build": "deno run --allow-read --allow-write --allow-env --allow-net --allow-run builder.ts"
-  }
-}
-```
-
-### 権限の最小化
-
-Denoの権限は必要最小限に抑えます。
-
-**必要な権限** (builder.ts用):
-
-- `--allow-read`: ソースファイル読み取り
-- `--allow-write`: ビルド結果書き込み
-- `--allow-env`: 環境変数アクセス
-- `--allow-net`: esbuildダウンロード（初回のみ）
-- `--allow-run`: `deno fmt`実行
+- **型チェック**: `tsc`（`src/`はブラウザ向け`tsconfig.json`、`builder.ts`はNode向け`tsconfig.node.json`）。バンドラーは型チェックを行わないため、必ず`pnpm typecheck`を実行します
+- **リント**: `oxlint`（設定は`.oxlintrc.json`）。`typescript/no-explicit-any`をerrorとして`any`を禁止します
+- **フォーマット**: `oxfmt`（`pnpm fmt`）
 
 ## パフォーマンス最適化
 
@@ -617,8 +594,7 @@ const searchTimelineObserver = new MutationObserver((mutations) => {
 
 **使用禁止なAPI**:
 
-- `Deno.*`（全て）: `Deno.readTextFile`、`Deno.writeTextFile`等
-- Node.js API（ポリフィルなし）: `fs`、`path`、`process`等
+- Node.js API（ポリフィルなし）: `node:fs`、`node:path`、`process`等（`src/`では使用禁止）
 
 ### DOM APIの安全な使用
 
@@ -664,7 +640,7 @@ div.addEventListener("click", (target) => {
 ## まとめ
 
 このプロジェクトのコーディング規約は、型安全性、パフォーマンス、保守性を重視しています。TypeScriptのstrict
-typing、DOM操作の安全性確認、状態機械の純粋関数原則、Deno規約の遵守、パフォーマンス最適化を徹底することで、高品質なコードベースを維持します。
+typing、DOM操作の安全性確認、状態機械の純粋関数原則、Node.js / pnpm規約の遵守、パフォーマンス最適化を徹底することで、高品質なコードベースを維持します。
 
 詳細な技術情報は [docs/architecture.md](architecture.md) を、開発環境は
 [docs/development.md](development.md) を参照してください。
