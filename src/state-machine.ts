@@ -190,8 +190,7 @@ export class StateMachine<StateContext extends Record<string, unknown>> {
       });
       return false;
     } else {
-      matchedTransition.execute &&
-        matchedTransition.execute(event, this.context);
+      matchedTransition.execute?.(event, this.context);
     }
 
     this.currentState = matchedTransition.to;
