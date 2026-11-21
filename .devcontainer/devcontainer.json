@@ -16,6 +16,8 @@
   "mounts": [
     "source=keeb-pd-claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
     "source=keeb-pd-claude-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+    // node_modules をホストのバインドマウントから分離（OS/アーキテクチャ差異の回避と I/O 高速化）
+    "source=keeb-pd-node-modules-${devcontainerId},target=/workspaces/node_modules,type=volume",
     // ホスト側のghの認証情報を使いたい場合
     // "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh,target=/home/vscode/.config/gh,type=bind"
     "source=keeb-pd-claude-gh-${devcontainerId},target=/home/vscode/.config/gh,type=volume"
