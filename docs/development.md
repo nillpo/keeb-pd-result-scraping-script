@@ -334,6 +334,8 @@ pnpm fmt:check   # 整形済みかの確認のみ
 
 GitHub Actions（`.github/workflows/ci.yml`）が、プルリクエストと`main`へのpushで `pnpm fmt:check` / `pnpm lint` / `pnpm typecheck` / `pnpm build` を自動実行します。ワークフロー内のアクションはコミットSHAで固定しています。
 
+Dependabot（`.github/dependabot.yml`）が、npm依存とGitHub Actionsを毎週チェックして更新PRを作成します。公開から7日未満のバージョンは対象にしません（`minimumReleaseAge`と同じ7日。ただし別々の仕組み）。`.node-version`と`.devcontainer/Dockerfile`の`NODE_VERSION` / `PNPM_VERSION`はDependabotの対象外なので、Node.jsやpnpmを上げるときは手動で更新し、`package.json`の`engines` / `packageManager`も合わせて確認してください。
+
 ### ビルドプロセス詳細
 
 `builder.ts` が実行する処理（順番に）:
