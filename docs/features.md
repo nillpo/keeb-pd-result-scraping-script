@@ -135,7 +135,6 @@ keeb-pd-tweets-YYYY-MM-DDTHH-MM-SS.json
 ```json
 {
   "schemaVersion": 1,
-  "round": "1",
   "collectedAt": "2026-02-15T14:30:45.123Z",
   "tweets": [
     {
@@ -162,12 +161,11 @@ keeb-pd-tweets-YYYY-MM-DDTHH-MM-SS.json
 
 ### トップレベルのフィールド
 
-| フィールド      | 型             | 説明                                                                                   | 例                           |
-| --------------- | -------------- | -------------------------------------------------------------------------------------- | ---------------------------- |
-| `schemaVersion` | number         | JSON形式のバージョン。構造を変えるときに上げます                                       | `1`                          |
-| `round`         | string \| null | 全ツイートが同じラウンドならその番号。ラウンドが混在している場合と、0件の場合は `null` | `"1"`                        |
-| `collectedAt`   | string         | ダウンロードした日時（ISO 8601形式）。ファイル名のタイムスタンプと同じ時刻             | `"2026-02-15T14:30:45.123Z"` |
-| `tweets`        | Tweet[]        | 収集したツイート                                                                       |                              |
+| フィールド      | 型      | 説明                                                                       | 例                           |
+| --------------- | ------- | -------------------------------------------------------------------------- | ---------------------------- |
+| `schemaVersion` | number  | JSON形式のバージョン。構造を変えるときに上げます                           | `1`                          |
+| `collectedAt`   | string  | ダウンロードした日時（ISO 8601形式）。ファイル名のタイムスタンプと同じ時刻 | `"2026-02-15T14:30:45.123Z"` |
+| `tweets`        | Tweet[] | 収集したツイート                                                           |                              |
 
 ### Tweet のフィールド
 
@@ -196,7 +194,7 @@ import json
 with open('keeb-pd-tweets-2026-02-15T14-30-45.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
-print(f"ラウンド: {data['round']}  収集日時: {data['collectedAt']}")
+print(f"収集日時: {data['collectedAt']}")
 tweets = data['tweets']
 
 # いいね数トップ10
@@ -214,7 +212,7 @@ for tweet in top_10:
 ```typescript
 1. Array.from(context.collectedTweets.values())  // Map → 配列変換
    ↓
-2. createTweetExport(tweets, now)                // メタ情報（schemaVersion / round / collectedAt）を付与
+2. createTweetExport(tweets, now)                // メタ情報（schemaVersion / collectedAt）を付与
    ↓
 3. JSON.stringify(..., null, 2)                  // インデント付きJSON
    ↓
