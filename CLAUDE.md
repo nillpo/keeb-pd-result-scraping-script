@@ -32,7 +32,8 @@ KEEB_PDラウンドのツイートをスクレイピング、メタデータ（�
 ├── package.json            # 依存関係とscripts
 ├── pnpm-lock.yaml          # 依存関係ロックファイル
 ├── pnpm-workspace.yaml     # pnpm設定（minimumReleaseAge等）
-├── tsconfig.json           # src/（ブラウザ向け）の型チェック設定
+├── tsconfig.json           # project references（エディタ用。app/nodeを束ねる）
+├── tsconfig.app.json       # src/（ブラウザ向け）の型チェック設定
 ├── tsconfig.node.json      # builder.ts（Node向け）の型チェック設定
 ├── .oxlintrc.json          # oxlint設定
 └── out/                    # ビルド出力ディレクトリ（.gitignore）

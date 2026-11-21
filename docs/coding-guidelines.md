@@ -446,7 +446,7 @@ minimumReleaseAgeStrict: true
   "scripts": {
     "build": "node builder.ts",
     "dev": "node --watch --watch-path=./src --watch-path=./builder.ts builder.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json",
     "lint": "oxlint",
     "fmt": "oxfmt src builder.ts",
     "fmt:check": "oxfmt --check src builder.ts"
@@ -458,7 +458,7 @@ minimumReleaseAgeStrict: true
 
 ### 型チェック・リント・フォーマット
 
-- **型チェック**: `tsc`（`src/`はブラウザ向け`tsconfig.json`、`builder.ts`はNode向け`tsconfig.node.json`）。バンドラーは型チェックを行わないため、必ず`pnpm typecheck`を実行します
+- **型チェック**: `tsc`（`src/`はブラウザ向け`tsconfig.app.json`、`builder.ts`はNode向け`tsconfig.node.json`。ルートの`tsconfig.json`は両者を束ねるproject referencesで、エディタが各ファイルに正しい設定を適用するために使います）。バンドラーは型チェックを行わないため、必ず`pnpm typecheck`を実行します
 - **リント**: `oxlint`（設定は`.oxlintrc.json`）。`typescript/no-explicit-any`をerrorとして`any`を禁止します
 - **フォーマット**: `oxfmt`（`pnpm fmt`）
 

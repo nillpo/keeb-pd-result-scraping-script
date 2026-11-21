@@ -9,7 +9,7 @@
     "node": ">=26.13.1"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json",
     "lint": "oxlint",
     "fmt": "oxfmt src builder.ts",
     "fmt:check": "oxfmt --check src builder.ts",
