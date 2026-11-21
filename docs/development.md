@@ -21,7 +21,7 @@ Scraperの開発環境セットアップと開発ワークフローについて�
 
 #### 前提条件
 
-- **Node.js**: 26.13.1以降（LTS。`builder.ts` をtype strippingで直接実行するため）
+- **Node.js**: 26.13.1以降（LTS。`builder.ts` をtype strippingで直接実行するため）。使用バージョンは `.node-version` に記載（fnm / mise / nodenv / `actions/setup-node` 等が読み取る。DevContainer の `NODE_VERSION` と揃えること）
 - **pnpm**: 12.21.0（`package.json` の `packageManager` に固定。10.16以降で `minimumReleaseAge` が使えます）
 - **VS Code**（オプション、推奨）: Oxc拡張機能と組み合わせて使用
 
