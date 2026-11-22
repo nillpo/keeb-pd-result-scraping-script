@@ -17,7 +17,7 @@ type StateSchema =
   | MonitoringSearchPageSchema
   | LoadingComposePageSchema
   | MonitoringComposePageSchema;
-type State = StateSchema["state"];
+export type State = StateSchema["state"];
 type StateEventType =
   | "PAGE_CHANGED"
   | "DETECT_SEARCH_URL"
