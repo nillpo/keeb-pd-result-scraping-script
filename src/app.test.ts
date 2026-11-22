@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { createApp, filterTweetNodes } from "./app.ts";
 import { PANEL_ID } from "./panel.ts";
+import { createDownloadFileName } from "./tweet-export.ts";
 import { createNode, promotion, quote, tweetHtml } from "./test-fixtures.ts";
 
 const SEARCH_URL = "/search?f=live&q=%23KEEB_PD_R123%20min_faves%3A5";
@@ -216,7 +217,9 @@ describe("パネル", () => {
     expect(document.querySelector(`#${PANEL_ID} .kp-count`)?.textContent).toBe("1件");
   });
 
-  it("ダウンロードで JSON を保存し、後始末をする", () => {
+  it("ダウンロードで収集したツイートを JSON で保存し、後始末をする", async () => {
+    // JSON の collectedAt とファイル名のタイムスタンプが同じ時刻になることを確かめる
+    const now = new Date("2026-02-15T14:30:45.123Z");
     const createObjectURL = vi.fn((_blob: Blob) => "blob:test");
     const revokeObjectURL = vi.fn();
     // jsdom の URL には無いので、テストのあいだだけ差し込む（afterEach で消す）
@@ -231,12 +234,26 @@ describe("パネル", () => {
     const h = monitoring();
     h.tweetsAdded(tweetNode("/a/status/1"));
     vi.advanceTimersByTime(1000);
+    vi.setSystemTime(now); // interval を進めたあとで、クリック時の時刻を固定する
     panelButton("ダウンロード")?.click();
 
     expect(createObjectURL).toHaveBeenCalledTimes(1);
-    expect(createObjectURL.mock.calls[0][0].type).toBe("application/json");
-    expect(downloads).toHaveLength(1);
-    expect(downloads[0]).toMatch(/^keeb-pd-tweets-\d{4}-\d{2}-\d{2}T[\d-]+Z\.json$/);
+    const blob = createObjectURL.mock.calls[0][0];
+    expect(blob.type).toBe("application/json");
+    expect(JSON.parse(await blob.text())).toEqual({
+      schemaVersion: 1,
+      collectedAt: "2026-02-15T14:30:45.123Z",
+      tweets: [h.app.getContext().collectedTweets.get("/a/status/1")],
+    });
+    expect(h.app.getContext().collectedTweets.get("/a/status/1")).toMatchObject({
+      url: "/a/status/1",
+      fav: 42,
+      retweet: 7,
+      round: "123",
+      userName: "ふぁぼ太郎",
+    });
+    expect(downloads).toEqual([createDownloadFileName(now)]);
+    expect(downloads[0]).toBe("keeb-pd-tweets-2026-02-15T14-30-45-123Z.json");
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:test");
     expect(document.querySelector("a[download]")).toBeNull(); // body に残さない
   });
